@@ -1647,3 +1647,36 @@ body.is-locked { overflow: hidden; }
   .file-row__ops { gap: 3px; }
   .icon-btn { width: 26px; height: 26px; }
 }
+
+/* ============================================================
+   长尾预设页入口（基础工具页顶部的场景入口）
+   ============================================================ */
+
+.preset-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.preset-links > span { flex: 0 0 auto; }
+
+.preset-links a {
+  padding: 4px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: border-color .15s, color .15s;
+}
+
+.preset-links a:hover { border-color: var(--brand); color: var(--brand); }
+
+@media (max-width: 560px) {
+  .preset-links { font-size: 12px; }
+  .preset-links a { padding: 3px 9px; }
+}

@@ -34,6 +34,21 @@ const marginSel = $('margin');
 const qualityInput = $('quality');
 const qualityVal = $('qualityVal');
 
+/* 长尾预设页：<body data-preset='{"pageSize":"a4l","margin":"none"}'> */
+(function applyPreset() {
+  const raw = document.body.dataset.preset;
+  if (!raw) return;
+  let p;
+  try { p = JSON.parse(raw); } catch { return; }
+
+  if (p.pageSize) pageSizeSel.value = p.pageSize;
+  if (p.margin) marginSel.value = p.margin;
+  if (p.quality) {
+    qualityInput.value = p.quality;
+    qualityVal.textContent = p.quality;
+  }
+})();
+
 /* 单位是 PDF 的 pt（1pt = 1/72 英寸） */
 const A4 = { w: 595.28, h: 841.89 };
 const MARGINS = { none: 0, normal: 36, wide: 54 };

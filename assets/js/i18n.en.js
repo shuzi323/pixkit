@@ -7,6 +7,7 @@
 
 import { TOOLS } from './i18n.tools.js';
 import { TEXT } from './i18n.text.js';
+import { PRESETS_EN } from './i18n.presets.js';
 
 const UI = {
   /* ---------- 站点通用 ---------- */
@@ -307,4 +308,4 @@ export const RULES = [
   [/^Base64 后 (.+)$/, (m) => `${m[1]} as Base64`],
 ];
 
-export const EN = Object.assign({}, UI, TOOLS, TEXT);
+export const EN = Object.assign({}, UI, TOOLS, TEXT, PRESETS_EN);

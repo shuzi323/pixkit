@@ -44,15 +44,31 @@ function faqBlock(html) {
   let m;
   while ((m = re.exec(html))) {
     depth += m[0][1] === '/' ? -1 : 1;
-    if (depth === 0) return html.slice(from, m.index);
+    if (depth === 0) return { from, to: m.index };
   }
   return null;
 }
 
+const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** 把整块问答换成给定的条目（预设页用：每页有自己的 FAQ，不能复用基础页的） */
+export function replaceFaq(html, items) {
+  const box = faqBlock(html);
+  if (!box || !items?.length) return html;
+
+  const body = items.map(({ q, a }) => `        <details>
+          <summary>${escHtml(q)}</summary>
+          <div class="faq__body"><p>${escHtml(a)}</p></div>
+        </details>`).join('\n');
+
+  return html.slice(0, box.from) + '\n' + body + '\n      ' + html.slice(box.to);
+}
+
 /** @returns {{ q: string, a: string }[]} */
 export function readFaq(html) {
-  const block = faqBlock(html);
-  if (!block) return [];
+  const box = faqBlock(html);
+  if (!box) return [];
+  const block = html.slice(box.from, box.to);
 
   const items = [];
   const re = /<details\b[^>]*>([\s\S]*?)<\/details>/g;

@@ -25,6 +25,7 @@ const SHELL = [
   '/assets/js/i18n.en.js',
   '/assets/js/i18n.tools.js',
   '/assets/js/i18n.text.js',
+  '/assets/js/i18n.presets.js',
 ];
 
 /* 页面导航最多等这么久，超过就用缓存 —— 弱网下不至于白屏 */

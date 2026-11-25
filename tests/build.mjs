@@ -79,7 +79,9 @@ for (const f of pages) {
   }
 
   // 3.2 FAQ：条数必须与源页面可见问答一致
-  const src = existsSync(srcOf(f)) ? readFileSync(srcOf(f), 'utf8') : '';
+  //     预设页是构建期生成的，源仓库里没有对应文件 —— 这类页面直接拿 dist 自己的内容对账
+  const generated = !existsSync(srcOf(f));
+  const src = generated ? html : readFileSync(srcOf(f), 'utf8');
   const visible = readFaq(src);
 
   const ld = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
@@ -110,7 +112,7 @@ for (const f of pages) {
 }
 
 ok(unversioned === 0, '所有页面引用的 css/js 都带版本号');
-ok(faqPages >= 11, `FAQPage 覆盖 ${faqPages} 个页面（首页 + 10 个工具页）`);
+ok(faqPages >= 11, `FAQPage 覆盖 ${faqPages} 个页面（首页 + 工具页 + 预设页）`);
 ok(mismatch === 0, 'FAQ 结构化数据与页面可见内容完全一致');
 
 /* ---------- 4. 模块依赖也带版本 ---------- */

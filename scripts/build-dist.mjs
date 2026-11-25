@@ -20,7 +20,8 @@ import {
 import { join, dirname, resolve, relative, sep } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import { injectFaq } from './faq.mjs';
+import { injectFaq, replaceFaq } from './faq.mjs';
+import { PRESETS, SITE, renderPreset } from './presets.mjs';
 
 // 用脚本自身位置推项目根目录，而不是写死绝对路径。
 // 否则云端构建机（Linux）上 E:/code/ai/forFun 根本不存在，构建必挂。
@@ -75,7 +76,39 @@ function pageUrl(file) {
   return url.endsWith('/index.html') ? url.slice(0, -'index.html'.length) : url;
 }
 
-/* ---------------- 1. 算资源指纹 ---------------- */
+/* ---------------- 1. 生成长尾预设页 ---------------- */
+// 必须在算指纹和注入 FAQ 之前：新页面同样要带版本号和结构化数据。
+
+let presetCount = 0;
+for (const p of PRESETS) {
+  const basePath = join(ROOT, 'tools', p.tool, 'index.html');
+  if (!existsSync(basePath)) {
+    console.warn(`  ! 预设页跳过（基础页不存在）: ${p.tool}/${p.slug}`);
+    continue;
+  }
+
+  let html = renderPreset(readFileSync(basePath, 'utf8'), p);
+  if (p.faq?.length) html = replaceFaq(html, p.faq);
+
+  const outDir = join(DIST, 'tools', p.tool, p.slug);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'index.html'), html);
+  presetCount++;
+}
+
+/* 预设页也要进 sitemap —— 源 sitemap 只列基础页，这里补上 */
+if (presetCount) {
+  const smPath = join(DIST, 'sitemap.xml');
+  if (existsSync(smPath)) {
+    const entries = PRESETS.map(p =>
+      `  <url>\n    <loc>${SITE}/tools/${p.tool}/${p.slug}/</loc>\n` +
+      `    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`
+    ).join('');
+    writeFileSync(smPath, readFileSync(smPath, 'utf8').replace('</urlset>', entries + '</urlset>'));
+  }
+}
+
+/* ---------------- 2. 算资源指纹 ---------------- */
 
 const assetFiles = listFiles(join(DIST, 'assets'));
 const hash = createHash('sha256');
@@ -86,7 +119,7 @@ for (const f of assetFiles) {
 // 10 位足够：1/36^10 的碰撞概率，且文件名短一点好读
 const V = hash.digest('hex').slice(0, 10);
 
-/* ---------------- 2. 改写引用 ---------------- */
+/* ---------------- 3. 改写引用 ---------------- */
 
 /** HTML：只给 css/js 加版本号，图标不加（manifest 里写的是固定路径） */
 function versionHtml(html) {
@@ -158,6 +191,7 @@ console.log(`\n✓ dist 已生成`);
 console.log(`  文件数：${files}`);
 console.log(`  总体积：${(bytes / 1024).toFixed(0)} KB`);
 console.log(`  资源版本：${V}`);
+console.log(`  长尾预设页：${presetCount} 个`);
 console.log(`  FAQ 结构化数据：${htmlFiles.length} 个页面已处理`);
 console.log(`\n下一步：`);
 console.log(`  自动部署 → 推送到 GitHub，Cloudflare Workers 会按 build command 自动构建`);

@@ -18,6 +18,8 @@
 | 时间戳转换 | `/tools/timestamp/` | 秒/毫秒/微秒自动识别 + 手动指定，同时给本地/UTC/ISO/相对时间 |
 | JSON 格式化与排序 | `/tools/json/` | 美化、压缩、键名递归排序，报错定位到行列并给出修改建议 |
 
+另有 6 个**场景页**（`/tools/compress/200kb/`、`/tools/idphoto/one-inch/` 等），同一个引擎、不同默认参数，接更具体的搜索意图。构建时生成，详见 [长尾预设页](#长尾预设页)。
+
 ## 技术特点
 
 - **零构建**：纯 HTML + 原生 ES Module，没有 webpack/vite，改完刷新就生效
@@ -50,6 +52,7 @@
 │       ├── i18n.en.js            英文词典（站点 UI + 动态文案规则）
 │       ├── i18n.tools.js         英文词典（四个图片工具页 + EXIF 字段名）
 │       ├── i18n.text.js          英文词典（三个文本工具页）
+│       ├── i18n.presets.js       英文词典（长尾预设页）
 │       ├── pwa.js                Service Worker 注册 + 安装引导
 │       ├── home.js               首页搜索与分类筛选
 │       ├── compare.js            压缩前后对比（可拖动分割线）
@@ -77,12 +80,14 @@
 
 scripts/
 ├── build-dist.mjs                 白名单打包 + 资源指纹 + 注入结构化数据
-└── faq.mjs                        从页面可见问答生成 FAQPage JSON-LD
+├── faq.mjs                        从页面可见问答生成 FAQPage JSON-LD
+└── presets.mjs                    长尾预设页的定义与派生（改这里，不要改 dist）
 
 tests/
 ├── build.mjs                      纯 Node：部署产物检查（30 项，秒级）
 ├── e2e-drop.mjs                   拖拽 / 粘贴的统一行为（自己起服务器）
 ├── e2e-pdf.mjs                    图片转 PDF（含 xref 偏移量与 JPEG 完整性校验）
+├── e2e-presets.mjs                预设页：参数是否真套用、SEO 要素、英文漏译
 └── e2e-*.mjs                      各功能的端到端测试
 ```
 
@@ -129,7 +134,49 @@ npm run test:i18n
 
 ### 已知限制：词典随每个页面加载
 
-三个词典文件（`i18n.en.js` / `i18n.tools.js` / `i18n.text.js`）合计约 35KB（gzip），由 `i18n.js` 静态 import —— 中文访客也要下载。换来的是零闪烁：语言在首屏渲染前就定了，不会先闪一下中文再变英文。如果以后英文流量很低、又在意首屏，可以改成 `lang === 'en'` 时动态 `import()`，代价是英文访客会看到一瞬中文。
+四个词典文件（`i18n.en.js` / `i18n.tools.js` / `i18n.text.js` / `i18n.presets.js`）合计约 39KB（gzip），由 `i18n.js` 静态 import —— 中文访客也要下载。换来的是零闪烁：语言在首屏渲染前就定了，不会先闪一下中文再变英文。如果以后英文流量很低、又在意首屏，可以改成 `lang === 'en'` 时动态 `import()`，代价是英文访客会看到一瞬中文。**词条只会越加越多，这条迟早要做。**
+
+
+## 长尾预设页
+
+同一个工具对应一堆不同说法。用户搜的是「图片压缩到 200kb」「一寸照片多少像素」「多张图片合成 pdf」—— 这三种意图，一个 `/tools/compress/` 页面接不住全部。
+
+所以有一层预设页：
+
+```
+/tools/compress/200kb/     压缩到 200KB，默认「按目标大小 200」
+/tools/compress/1mb/       压缩到 1MB
+/tools/compress/webp/      转 WebP，默认输出格式 image/webp
+/tools/idphoto/one-inch/   一寸，默认选中 25×35mm
+/tools/idphoto/two-inch/   二寸，默认选中 35×49mm
+/tools/pdf/merge/          多图合并，默认 A4 + 适中边距
+```
+
+### 怎么实现的
+
+**源仓库里没有这些 HTML。** 它们在构建时从基础页派生（`scripts/build-dist.mjs` 调 `scripts/presets.mjs`），只改七处：标题、描述、canonical、og、h1 与导语、面包屑、`<body data-preset='…'>`，再把问答块换成这一页专属的三条。
+
+引擎侧完全复用，只多一段读 `data-preset` 的逻辑：
+
+```js
+// compress.js 里，state 定义之后
+const raw = document.body.dataset.preset;   // '{"mode":"target","targetKb":200}'
+const p = JSON.parse(raw);
+modeSel.value = p.mode; state.mode = p.mode;
+targetInput.value = p.targetKb; state.targetKB = p.targetKb;
+```
+
+好处是改基础页时预设页自动跟着变。代价是**不能单独改某一页的 HTML** —— 要改就改 `presets.mjs` 里的数据。
+
+### 加一个新预设页
+
+1. 在 `scripts/presets.mjs` 的 `PRESETS` 数组里加一条（`tool` / `slug` / `preset` / 标题描述 / `unique` 正文 / `faq`）
+2. 跑 `npm run test:presets` —— 它会重建并逐项检查：参数是否真的套用到控件、标题描述是否互不相同、FAQ 与 schema 是否一致、英文模式有没有露中文、sitemap 有没有漏
+3. 补英文词条到 `assets/js/i18n.presets.js`（漏了第 2 步会直接报出来）
+
+### 一条红线：不能只是换数字
+
+搜索引擎把「同一模板换几个词」的批量页面判为 doorway page，严重时整站降权。所以这里只有 6 个页面，每一页的正文（为什么是这个数值、什么场景不合适、压不动怎么办）和 FAQ 都是单独写的。**要加就加真正不同的用法，不要为了凑数加 `/tools/compress/300kb/`。**
 
 
 ## 离线可用（PWA）
@@ -452,23 +499,25 @@ Vercel、Netlify 也都能拖 `dist` 上去，配置方式类似。国内访问�
 
 按性价比排序：
 
-1. **长尾工具页**：二维码生成、图片加水印、图片打码、图片拼接。每个都是独立的搜索入口，共享现有引擎，做一个 1 小时左右。
-2. **把图片工具串成链路**：压缩 → 加水印 → 打码 → 转 PDF 已经在同一个站里了，但彼此没有入口互链。用户在压缩页完成之后，最自然的下一步就是「转成 PDF 发给对方」，这条路径现在得自己回首页找。
-3. **英文独立路径**：现在英文是运行时切换，爬虫拿不到。要做英文 SEO 得静态输出 `/en/` 目录，AdSense 单价高 5–10 倍。
-4. **使用教程内容**：10–20 篇「怎么把照片压到 200KB 以内」这类文章，既养 AdSense 审核，又吃长尾搜索。
+1. **再加两三个场景页**（不是工具）：`/tools/idphoto/small-1-inch/`（驾驶证）、`/tools/compress/screenshot/`（截图转 WebP）。现成的机制，一条数据 + 一篇文案，要看搜索量决定。
+2. **新工具**：二维码生成、图片加水印、图片打码、图片拼接。每个都是独立的搜索入口，共享现有引擎，做一个 1 小时左右。
+3. **把图片工具串成链路**：压缩 → 加水印 → 打码 → 转 PDF 已经在同一个站里了，但结果区没有互通入口。用户在压缩页完成之后，最自然的下一步就是「转成 PDF 发给对方」，这条路径现在得自己回首页找。
+4. **英文独立路径**：现在英文是运行时切换，爬虫拿不到。要做英文 SEO 得静态输出 `/en/` 目录，AdSense 单价高 5–10 倍。
+5. **使用教程内容**：10–20 篇「怎么把照片压到 200KB 以内」这类文章，既养 AdSense 审核，又吃长尾搜索。
 5. **证件照换背景**：需要引入人像分割模型（约 2–3MB），是最大的功能缺口，也是最强的付费点。
 
 ## 开发说明
 
 ```bash
 npm install                    # 只装 puppeteer-core，用于端到端测试
-npm test                       # 跑全部测试（198 项）
+npm test                       # 跑全部测试（247 项）
 npm run test:build             # 只测部署产物：白名单 / 资源指纹 / 结构化数据（纯 Node，秒级）
 npm run test:compress          # 只测压缩
 npm run test:idphoto           # 只测证件照
 npm run test:i18n              # 只测中英切换，含全站漏译扫描
 npm run test:text              # 只测 JSON / 时间戳 / Base64 解码
 npm run test:pwa               # 只测离线能力（自己起服务器，测完关掉）
+npm run test:presets           # 重建并只测预设页（自己起服务器服务 dist）
 npm run test:pdf               # 只测图片转 PDF（含手写 PDF 结构校验）
 npm run test:drop              # 只测拖拽与粘贴（自己起服务器）
 npm run icons                  # 重新生成 PWA 图标

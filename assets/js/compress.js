@@ -49,6 +49,28 @@ const state = {
   dirty: false,       // 处理中参数又变了
 };
 
+/* 长尾预设页：<body data-preset='{"mode":"target","targetKb":200}'>
+   只改控件和 state，其余逻辑完全复用 —— 预设页和主页面是同一个引擎 */
+(function applyPreset() {
+  const raw = document.body.dataset.preset;
+  if (!raw) return;
+  let p;
+  try { p = JSON.parse(raw); } catch { return; }
+
+  if (p.mode) { modeSel.value = p.mode; state.mode = p.mode; }
+  if (p.quality) {
+    qualityInput.value = p.quality;
+    state.quality = p.quality;
+    qualityVal.textContent = p.quality;
+  }
+  if (p.targetKb) { targetInput.value = p.targetKb; state.targetKB = p.targetKb; }
+  if (p.format) { formatSel.value = p.format; state.format = p.format; }
+  if (p.maxEdge) { edgeInput.value = p.maxEdge; state.maxEdge = p.maxEdge; }
+
+  qualityField.classList.toggle('hidden', state.mode !== 'quality');
+  targetField.classList.toggle('hidden', state.mode !== 'target');
+})();
+
 const MAX_BITMAP_CACHE = 40;   // 最多缓存多少张解码后的位图
 const CONCURRENCY = 3;
 

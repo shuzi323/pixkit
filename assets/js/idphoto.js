@@ -42,6 +42,17 @@ const state = {
   offY: 0,
 };
 
+/* 长尾预设页：<body data-preset='{"spec":"two"}'> */
+(function applyPreset() {
+  const raw = document.body.dataset.preset;
+  if (!raw) return;
+  try {
+    const p = JSON.parse(raw);
+    const spec = SPECS.find(s => s.id === p.spec);
+    if (spec) state.spec = spec;
+  } catch { /* 参数写错就当没有 */ }
+})();
+
 const PREVIEW_SCALE = 2;   // 预览用 2 倍像素，保证清晰
 
 /* ---------------- 尺寸 ---------------- */
