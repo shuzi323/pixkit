@@ -4,3 +4,6 @@ tests/.cache/
 *.log
 .DS_Store
 .wrangler/
+
+# 本地项目笔记，不进仓库
+.workbuddy/

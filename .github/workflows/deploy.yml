@@ -1,0 +1,101 @@
+name: Deploy to Cloudflare Pages
+
+# 用途：把 GitHub 上的代码推到「已经存在的」Cloudflare Pages 项目。
+# 适用于 Direct Upload 方式创建的项目 —— 这类项目无法事后接 Git 集成，
+# 只能用 wrangler 从 CI 里上传。
+#
+# 需要的两个仓库 secret（Settings → Secrets and variables → Actions）：
+#   CLOUDFLARE_API_TOKEN   —— 权限：Account / Cloudflare Pages / Edit
+#   CLOUDFLARE_ACCOUNT_ID  —— Cloudflare 后台域名概览页右下角
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 连续 push 时只保留最新一次，避免两个部署互相覆盖
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+env:
+  # ↓ 改成你 Dashboard 里那个 Pages 项目名（不一定等于仓库名）
+  #   也可以不改，改在仓库 Settings → Variables 里加 CLOUDFLARE_PAGES_PROJECT
+  PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'pixkit' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 启动本地静态服务
+        run: |
+          python3 -m http.server 8899 --bind 127.0.0.1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8899/ >/dev/null && break
+            sleep 1
+          done
+          curl -sf -o /dev/null http://127.0.0.1:8899/ || (echo "静态服务没起来" && exit 1)
+
+      - name: 端到端测试
+        run: npm test
+
+      - name: 失败时上传截图
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: tests/.cache
+          retention-days: 7
+
+  deploy:
+    needs: test          # 测试挂了就不部署
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 检查密钥是否配置
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          [ -n "$TOKEN" ] || { echo "::error::缺少 CLOUDFLARE_API_TOKEN，见 README"; exit 1; }
+          [ -n "$ACCOUNT" ] || { echo "::error::缺少 CLOUDFLARE_ACCOUNT_ID，见 README"; exit 1; }
+
+      - name: 生成部署目录
+        run: npm run dist
+
+      - name: 部署到 Cloudflare Pages
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PAGES_PROJECT }}
+
+      - name: 确认线上可访问
+        run: |
+          url="${{ steps.deploy.outputs.deployment-url }}"
+          echo "部署地址：$url"
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$url") || true
+            [ "$code" = "200" ] && echo "线上返回 200" && exit 0
+            sleep 3
+          done
+          echo "::error::部署地址未返回 200（最后状态 $code）"
+          exit 1
