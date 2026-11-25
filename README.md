@@ -10,6 +10,7 @@
 | 证件照制作 | `/tools/idphoto/` | 一寸/二寸/护照/美签等标准规格裁剪，一键排版 6 寸相纸 |
 | 格式转换 | `/tools/convert/` | JPG/PNG/WebP/AVIF/GIF/BMP 互转 |
 | 批量改尺寸 | `/tools/resize/` | 最大边长等比缩放 |
+| 图片转 PDF | `/tools/pdf/` | 多图合成一个 PDF，A4 纵向/横向/跟随图片，可调页边距，支持拖动排序 |
 | 图片转 Base64 | `/tools/base64/` | Data URI / CSS / HTML / Markdown 四种格式输出 |
 | 图片取色器 | `/tools/picker/` | 像素放大镜取色，HEX/RGB/HSL 复制，自动提取主色板 |
 | 清除照片 EXIF | `/tools/exif/` | 解析 GPS/设备/时间信息，无损删除（不重新编码） |
@@ -22,6 +23,7 @@
 - **零构建**：纯 HTML + 原生 ES Module，没有 webpack/vite，改完刷新就生效
 - **零运行时依赖**：不用 React、不用任何 npm 包，全部手写
 - **手写 ZIP 打包**：`assets/js/common.js` 里 100 行实现的 store 模式 ZIP，不引入 JSZip
+- **手写 PDF 生成**：`assets/js/pdf.js` 直接拼 PDF 对象表和 xref，JPEG 用 `/DCTDecode` 原样内嵌，不引入 jsPDF（省 350KB）
 - **架构即隐私**：服务器上没有接收图片的接口，用户想验证也验证不出东西来
 - **中英双语**：中文是唯一源码，英文运行时替换，切换不刷新、选择会记住
 - **能装到桌面、断网可用**：manifest + Service Worker，装上之后连网络都不需要
@@ -52,6 +54,7 @@
 │       ├── home.js               首页搜索与分类筛选
 │       ├── compare.js            压缩前后对比（可拖动分割线）
 │       ├── compress.js           压缩引擎（convert / resize 也复用这个）
+│       ├── pdf.js                PDF 组装（对象表 / xref / DCTDecode 内嵌）
 │       ├── idphoto.js            证件照
 │       ├── base64.js             图片转 Base64
 │       ├── picker.js             取色器
@@ -64,6 +67,7 @@
     ├── idphoto/index.html
     ├── convert/index.html
     ├── resize/index.html
+    ├── pdf/index.html
     ├── base64/index.html
     ├── picker/index.html
     ├── exif/index.html
@@ -78,6 +82,7 @@ scripts/
 tests/
 ├── build.mjs                      纯 Node：部署产物检查（30 项，秒级）
 ├── e2e-drop.mjs                   拖拽 / 粘贴的统一行为（自己起服务器）
+├── e2e-pdf.mjs                    图片转 PDF（含 xref 偏移量与 JPEG 完整性校验）
 └── e2e-*.mjs                      各功能的端到端测试
 ```
 
@@ -447,22 +452,24 @@ Vercel、Netlify 也都能拖 `dist` 上去，配置方式类似。国内访问�
 
 按性价比排序：
 
-1. **长尾工具页**：二维码生成、图片加水印、图片拼接。每个都是独立的搜索入口，共享现有引擎，做一个 1 小时。
-2. **英文独立路径**：现在英文是运行时切换，爬虫拿不到。要做英文 SEO 得静态输出 `/en/` 目录，AdSense 单价高 5–10 倍。
-3. **使用教程内容**：10–20 篇「怎么把照片压到 200KB 以内」这类文章，既养 AdSense 审核，又吃长尾搜索。
-4. **证件照换背景**：需要引入人像分割模型（约 2–3MB），是最大的功能缺口，也是最强的付费点。
+1. **长尾工具页**：二维码生成、图片加水印、图片打码、图片拼接。每个都是独立的搜索入口，共享现有引擎，做一个 1 小时左右。
+2. **把图片工具串成链路**：压缩 → 加水印 → 打码 → 转 PDF 已经在同一个站里了，但彼此没有入口互链。用户在压缩页完成之后，最自然的下一步就是「转成 PDF 发给对方」，这条路径现在得自己回首页找。
+3. **英文独立路径**：现在英文是运行时切换，爬虫拿不到。要做英文 SEO 得静态输出 `/en/` 目录，AdSense 单价高 5–10 倍。
+4. **使用教程内容**：10–20 篇「怎么把照片压到 200KB 以内」这类文章，既养 AdSense 审核，又吃长尾搜索。
+5. **证件照换背景**：需要引入人像分割模型（约 2–3MB），是最大的功能缺口，也是最强的付费点。
 
 ## 开发说明
 
 ```bash
 npm install                    # 只装 puppeteer-core，用于端到端测试
-npm test                       # 跑全部测试（164 项）
+npm test                       # 跑全部测试（198 项）
 npm run test:build             # 只测部署产物：白名单 / 资源指纹 / 结构化数据（纯 Node，秒级）
 npm run test:compress          # 只测压缩
 npm run test:idphoto           # 只测证件照
 npm run test:i18n              # 只测中英切换，含全站漏译扫描
 npm run test:text              # 只测 JSON / 时间戳 / Base64 解码
 npm run test:pwa               # 只测离线能力（自己起服务器，测完关掉）
+npm run test:pdf               # 只测图片转 PDF（含手写 PDF 结构校验）
 npm run test:drop              # 只测拖拽与粘贴（自己起服务器）
 npm run icons                  # 重新生成 PWA 图标
 ```
@@ -470,6 +477,8 @@ npm run icons                  # 重新生成 PWA 图标
 `test:build` 跑在最前面，因为它不需要浏览器：仓库源码漏进 `dist`、资源忘了打版本号、FAQ 和页面文字对不上，这三类问题都会在这一步当场挂掉，不用等浏览器跑完十几分钟。
 
 测试会启动本机 Chrome 跑完整链路（真实生成图片 → 上传 → 压缩 → 校验输出尺寸；时间戳会跟 Node 算出的结果对账），截图输出到 `tests/.cache/`。
+
+`test:pdf` 不只看「文件像不像 PDF」：它把下载到的字节读回来，逐个验证 xref 偏移量是否指向正确的对象、每个流的 `/Length` 是否与实际字节数一致、内嵌的两张图是不是完整的 JPEG（`FFD8…FFD9`）。这些正是手写 PDF 最容易错的地方，而浏览器预览器又很宽容 —— 光看「能打开」会漏掉一半问题。
 
 注意大部分 e2e 测试连的是 `http://localhost:8899`，跑之前先开 `npm run dev`。`test:pwa` 和 `test:drop` 例外，它们自己起服务器。
 

@@ -8,8 +8,8 @@ import { BASE, LAUNCH, log, ok } from './env.mjs';
 
 const PAGES = [
   '/', '/tools/compress/', '/tools/idphoto/', '/tools/convert/',
-  '/tools/resize/', '/tools/base64/', '/tools/picker/', '/tools/exif/',
-  '/tools/b64img/', '/tools/timestamp/', '/tools/json/',
+  '/tools/resize/', '/tools/pdf/', '/tools/base64/', '/tools/picker/',
+  '/tools/exif/', '/tools/b64img/', '/tools/timestamp/', '/tools/json/',
 ];
 
 const browser = await puppeteer.launch(LAUNCH);

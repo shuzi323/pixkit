@@ -9,7 +9,7 @@
     "dist": "node scripts/build-dist.mjs",
     "deploy": "npm run dist && npx wrangler deploy",
     "deploy:dry": "npm run dist && npx wrangler deploy --dry-run --outdir=.wrangler/dry",
-    "test": "node tests/build.mjs && node tests/e2e-compress.mjs && node tests/e2e-idphoto.mjs && node tests/e2e-devtools.mjs && node tests/e2e-texttools.mjs && node tests/e2e-i18n.mjs && node tests/e2e-i18n-runtime.mjs && node tests/e2e-pwa.mjs && node tests/e2e-drop.mjs",
+    "test": "node tests/build.mjs && node tests/e2e-compress.mjs && node tests/e2e-idphoto.mjs && node tests/e2e-devtools.mjs && node tests/e2e-texttools.mjs && node tests/e2e-i18n.mjs && node tests/e2e-i18n-runtime.mjs && node tests/e2e-pwa.mjs && node tests/e2e-pdf.mjs && node tests/e2e-drop.mjs",
     "test:build": "node tests/build.mjs",
     "test:drop": "node tests/e2e-drop.mjs",
     "test:compress": "node tests/e2e-compress.mjs",
@@ -18,7 +18,8 @@
     "test:i18n": "node tests/e2e-i18n.mjs && node tests/e2e-i18n-runtime.mjs",
     "test:pwa": "node tests/e2e-pwa.mjs",
     "test:text": "node tests/e2e-texttools.mjs",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "test:pdf": "node tests/e2e-pdf.mjs"
   },
   "keywords": [
     "image-compression",

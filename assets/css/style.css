@@ -1596,3 +1596,54 @@ body.is-locked { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .cmp { transition: none; }
 }
+
+/* ============================================================
+   图片转 PDF：列表序号 / 行内操作 / 紧凑拖拽区
+   ============================================================ */
+
+.file-row__index {
+  flex: 0 0 auto;
+  width: 22px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.file-row__ops {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+
+.icon-btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+.icon-btn:disabled { opacity: .32; cursor: default; }
+.icon-btn:focus-visible { outline: 2px solid rgba(79, 70, 229, .45); outline-offset: 1px; }
+
+/* 已经有图在列表里的，拖拽区收窄，别再占半屏 */
+.dropzone.dropzone--compact { padding: 20px 16px; }
+.dropzone.dropzone--compact .dropzone__icon { display: none; }
+.dropzone.dropzone--compact .dropzone__title { font-size: 14px; }
+
+@media (max-width: 560px) {
+  .file-row { gap: 10px; padding: 10px 12px; }
+  .file-row__index { display: none; }
+  .file-row__thumb { width: 36px; height: 36px; }
+  .file-row__ops { gap: 3px; }
+  .icon-btn { width: 26px; height: 26px; }
+}

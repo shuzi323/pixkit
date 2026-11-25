@@ -317,4 +317,76 @@ export const TOOLS = {
   "拍摄参数": "Capture settings",
   "其它": "Other",
   "注释": "Comments",
+
+  /* ---------- 图片转 PDF ---------- */
+
+  "/ 图片转 PDF": "/ Image to PDF",
+  "图片转 PDF": "Image to PDF",
+  "把多张图片合成一个 PDF，可以调页面尺寸和页边距。转换在你的浏览器内完成，图片不会上传到任何服务器。":
+    "Combine several images into one PDF, with control over page size and margins. Everything runs in your browser — images are never uploaded.",
+  "支持 JPG / PNG / WebP / BMP · 按添加顺序每张一页 · 也可以直接":
+    "JPG / PNG / WebP / BMP · one page per image, in the order you add them · or just",
+  "PDF 设置": "PDF settings",
+  "页面尺寸": "Page size",
+  "A4 纵向（210 × 297 mm）": "A4 portrait (210 × 297 mm)",
+  "A4 横向（297 × 210 mm）": "A4 landscape (297 × 210 mm)",
+  "跟随图片尺寸": "Match each image",
+  "页边距": "Margins",
+  "无": "None",
+  "适中（1.27 cm）": "Normal (1.27 cm)",
+  "宽（1.9 cm）": "Wide (1.9 cm)",
+  "图片质量": "Image quality",
+  "质量只影响 PDF 里内嵌的图片，不影响文字清晰度。PDF 里没有文字时，设 90 以上肉眼基本看不出差别。":
+    "Quality only affects the JPEGs embedded in the PDF. With images there is no text layer, so anything above 90 looks identical to the eye.",
+  "生成 PDF": "Create PDF",
+  "下载 PDF": "Download PDF",
+  "图片转 PDF 适合什么场景": "When to use image-to-PDF",
+  "最常见的是「对方只收 PDF」：报名材料、报销单据、作品集提交、合同附件。 手机拍的照片、微信收到的截图，往往需要合并成一个文件才能提交。":
+    "Mostly when the other side only accepts PDF: application packets, expense receipts, portfolio submissions, contract attachments. Photos from your phone and screenshots from chat usually have to be merged into a single file before you can submit them.",
+  "顺序就是列表顺序 —— 想调整页面先后，用每行右侧的箭头移动。第一张就是 PDF 的第一页。":
+    "The list order is the page order — use the arrows on each row to rearrange. The first image becomes page one.",
+  "页面尺寸怎么选": "Choosing a page size",
+  "选项": "Option",
+  "A4 纵向": "A4 portrait",
+  "打印、正式材料提交。图会等比缩放到页面内并居中，不会被裁切":
+    "Printing and formal submissions. Images are scaled to fit and centred — never cropped.",
+  "A4 横向": "A4 landscape",
+  "宽幅截图、表格照片、PPT 导出图": "Wide screenshots, photos of tables, slides exported as images",
+  "跟随图片": "Match image",
+  "只想把图打包进 PDF、不在乎纸张大小。页面尺寸按 96 dpi 换算，长图也不会被截断":
+    "When you just want the images inside a PDF and don't care about paper size. Pages follow the image at 96 dpi, so long screenshots are never cut off.",
+  "图片会被压缩吗": "Are the images recompressed?",
+  "会重新编码成 JPEG —— PDF 内嵌图片用的就是这个格式。质量滑块设在 90 以上时，照片的损失通常无法用肉眼分辨。 透明背景（PNG 的透明区域）会变成白色，因为 JPEG 不支持透明通道。":
+    "Yes, each one is re-encoded as JPEG — that's the format PDF embeds. Above quality 90 the loss is usually invisible on photos. Transparent areas of a PNG turn white, because JPEG has no alpha channel.",
+  "如果 PDF 要打印：": "If the PDF is for printing:",
+  "质量建议 92 以上，页面尺寸选 A4 并保留适中边距。 质量设得太低时，打印出来会有明显的块状噪点。":
+    "Use quality 92 or higher, A4 pages and the normal margin. Set it much lower and you'll see blocky artefacts on paper.",
+  "能调整图片的先后顺序吗": "Can I change the order of the images?",
+  "可以。每行右侧有上下箭头，点一下就能移动。PDF 的页序就是列表顺序，第一张对应第一页。":
+    "Yes. Each row has up and down arrows. The page order is exactly the list order — the first row is page one.",
+  "生成的 PDF 里图片会变形吗": "Will the images be stretched?",
+  "不会。图片按原比例等比缩放后居中放置在页面里，四周留白由页边距决定，绝不拉伸或裁切。":
+    "No. Each image is scaled proportionally and centred; the space around it comes from the margin. Nothing is stretched or cropped.",
+  "为什么生成的 PDF 比原图小": "Why is the PDF smaller than my original files?",
+  "因为图片被重新编码成 JPEG 并按质量参数压缩。想要接近原图的体积，把质量调到 98 即可。":
+    "Because the images are re-encoded as JPEG at the quality you chose. Raise quality to 98 to stay close to the original.",
+  "能提取 PDF 里的文字吗": "Can I extract text from the PDF?",
+  "不能，这个工具只做图片合成。生成的 PDF 里是图片，没有文字层，所以也没法搜索或复制其中的文字。":
+    "No — this tool only combines images. The result has no text layer, so nothing in it can be searched or copied.",
+
+  /* 动态文案 */
+  "张图片": "images",
+  "共 {n} 页": "{n} pages in total",
+  "读取中…": "reading…",
+  "上移": "Move up",
+  "下移": "Move down",
+  "删除": "Remove",
+  "正在生成…": "Generating…",
+  "页": "pages",
+  "已在本地生成，未上传": "generated locally, never uploaded",
+  "还有图片没读取完，稍等一下": "Still reading the images — one moment",
+  "HEIC 格式暂不支持，请先转成 JPG": "HEIC isn't supported yet — convert it to JPG first",
+  "有图片读不出来，已跳过": "One image couldn't be read and was skipped",
+  "图片编码失败，换一张试试": "Encoding failed — try another image",
+  "生成失败，请重试": "Generation failed, please try again",
 };

@@ -93,7 +93,12 @@ const UI = {
   "清除照片 EXIF": "Strip photo EXIF",
   "看清照片里的 GPS 定位和相机型号，一键删掉。无损处理，不重新编码，画质不变。":
     "See the GPS location and camera model hidden in a photo, then delete them without re-encoding — image data untouched.",
-  "批量加水印、图片拼图、图片转 PDF 正在开发中。": "Batch watermarking, photo stitching and image-to-PDF are in the works.",
+  "批量加水印、图片拼图正在开发中。": "Batch watermarking and photo stitching are in the works.",
+  "批量加水印、图片拼图正在开发中 —— 有想加的可以直接提。":
+    "Batch watermarking and photo stitching are in the works — tell us what else you need.",
+  "图片": "Image",
+  "多张图片合成一个 PDF，可调纸张尺寸与页边距。报名、报销这类只收 PDF 的场合直接用。":
+    "Combine several images into one PDF with adjustable page size and margins — handy for applications and expense reports that only take PDF.",
   "为什么是「本地处理」": "Why local processing",
   "这不是营销话术，是技术架构决定的": "Not a marketing line — it's how the site is built",
   "01 / 隐私": "01 / Privacy",
