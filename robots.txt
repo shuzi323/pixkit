@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pixkit.pages.dev/sitemap.xml
+Sitemap: https://pixkit.1573834694.workers.dev/sitemap.xml

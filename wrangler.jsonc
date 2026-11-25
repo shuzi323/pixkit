@@ -1,0 +1,27 @@
+/**
+ * Cloudflare Workers 静态资源配置
+ *
+ * 这个文件解决两个必须显式声明的问题（Pages 是自动的，Workers 不是）：
+ *
+ * 1. assets.directory = ./dist
+ *    指向源码根目录会把 tests/、scripts/、package.json 全部变成可下载的公开文件。
+ *
+ * 2. not_found_handling = 404-page
+ *    不写的话，不存在的路径返回一个空白的 404（正文 0 字节），而不是 404.html。
+ */
+
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pixkit",
+  "compatibility_date": "2025-11-01",
+
+  "assets": {
+    "directory": "./dist",
+
+    // /tools/json 自动 307 到 /tools/json/，与本地预览行为一致
+    "html_handling": "auto-trailing-slash",
+
+    // 未匹配路径返回 dist/404.html，状态码 404
+    "not_found_handling": "404-page"
+  }
+}

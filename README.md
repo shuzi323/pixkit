@@ -215,117 +215,149 @@ server {
 
 上传：`rsync -avz --exclude node_modules --exclude tests ./ user@server:/var/www/pixkit/`
 
-### 方案二：Cloudflare Pages（推荐，免费、无限带宽）
+### 方案二：Cloudflare Workers 静态资源（当前方案）
 
-**先回答最常问的：不需要域名。** 部署完会免费送你一个 `你的项目名.pages.dev`，可以直接用。
+**先回答最常问的：不需要域名。** 部署完会送你一个 `项目名.账号ID.workers.dev`，可以直接用。当前线上地址是 `https://pixkit.1573834694.workers.dev`。
 
 但有两个现实问题要提前知道：
 
-1. **`*.pages.dev` 在国内不稳定**。这个域名从 2022 年起常遭 DNS 污染，部分运营商/时段会解析到 `127.0.0.1`。绑定自己的域名能明显改善（绕开了 pages.dev 这一层）。
+1. **`*.workers.dev` 在国内不稳定**。这类域名常遭 DNS 污染，部分运营商/时段会解析到 `127.0.0.1`。绑定自己的域名能明显改善。
 2. **Cloudflare 在中国大陆没有节点**。即使绑了域名，大陆访客仍然走境外节点，延迟在 200–300ms。能用，但不是"快"。
 
-所以判断标准很简单：**先上线验证就选 Pages（免费、5 分钟搞定）；如果后面确认流量主要来自国内且在乎体验，再迁回自己的服务器**。纯静态站迁移成本几乎为零。
+所以判断标准很简单：**先上线验证就用 Workers（免费、5 分钟搞定）；如果后面确认流量主要来自国内且在乎体验，再迁回自己的服务器**。纯静态站迁移成本几乎为零。
 
-> 现在走的是 **方式 B**（Cloudflare 直接拉 GitHub 仓库构建）。方式 A 留作应急：线上出问题、需要临时发一版时用。
+#### 必须有的 `wrangler.jsonc`
 
-#### 方式 A：手动上传（应急用）
+Workers 和 Pages 有一处关键区别：**Pages 会自动把 `404.html` 当错误页、自动只发构建产物；Workers 不会，什么都得显式声明。**
 
-```bash
-npm run dist          # 生成干净的 dist/ 目录（19 个文件，约 172 KB）
+项目根目录的 `wrangler.jsonc` 就干这件事：
+
+```jsonc
+{
+  "name": "pixkit",
+  "compatibility_date": "2025-11-01",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}
 ```
 
-然后 Dashboard → **Workers & Pages** → 进项目 → **Create deployment** → 把 `dist` 文件夹拖进去。
+漏掉这两项会出什么问题（都是在线上真实踩到的）：
 
-> 一定要拖 `dist` 而不是项目根目录。根目录里有 `node_modules`（几十 MB）和 `tests`，传上去纯属浪费，还可能超出单站 2 万个文件的限制。
+| 漏掉什么 | 后果 |
+|---|---|
+| `directory: ./dist` | 部署成了**整个仓库根目录**，`/tests/e2e-compress.mjs`、`/package.json`、`/.gitignore`、`/README.md` 全部返回 200，可以直接下载。测试代码和构建脚本一起公开。 |
+| `not_found_handling: 404-page` | 访问不存在的地址返回**正文 0 字节的空 404**，`404.html` 根本不生效。 |
 
-#### 方式 B：Git 集成（当前方案）
+改完可以这样自查（两项都应该是 404）：
+
+```bash
+curl -o /dev/null -w "%{http_code}\n" https://你的域名/tests/e2e-compress.mjs
+curl -o /dev/null -w "%{http_code}\n" https://你的域名/package.json
+```
+
+#### 方式 A：Git 集成（推荐）
 
 Cloudflare 拉 GitHub 仓库 → 自己跑构建 → 自动上线。push 一次更新一次，不用本地打包。
 
-配置项：
+Dashboard → **Workers & Pages** → **Create** → **Import a repository**，配置：
 
 | 项 | 值 |
 |---|---|
-| Production branch | `main` |
-| Framework preset | `None` |
 | Build command | `node scripts/build-dist.mjs` |
-| Build output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
 | 环境变量（建议） | `NODE_VERSION=22` |
 
-**Build command 必须填。** 这个站「零构建」说的是运行时没有打包步骤，但 `dist/` 是 `npm run dist` 从仓库里筛出来的干净子集 —— 没有 `tests/`、`scripts/`、`package.json`。不填的话 Cloudflare 会把仓库根目录整个发出去，`tests/` 和 `scripts/` 都会变成公开可访问的 URL。
+**Build command 必须填。** 这个站「零构建」说的是运行时没有打包步骤，但 `dist/` 是 `npm run dist` 从仓库里筛出来的干净子集 —— 没有 `tests/`、`scripts/`、`package.json`。
 
-`scripts/build-dist.mjs` 用 `import.meta.url` 反推项目根目录，不是写死的绝对路径。这点很关键：上一版写死了 `E:/code/ai/forFun`，在 Cloudflare 的 Linux 构建机上必然 `ENOENT`。
+`scripts/build-dist.mjs` 用 `import.meta.url` 反推项目根目录，不是写死的绝对路径。这点很关键：上一版写死了 `E:/code/ai/forFun`，在 Linux 构建机上必然 `ENOENT`。
 
 构建流程上的几个要点：
 
-- Cloudflare 检测到 `package.json` 会先自动跑 `npm install`。`puppeteer-core` 只在测试里用，不下载 Chromium，装起来很快；想再省几秒可以加环境变量 `NPM_FLAGS=--omit=dev`
+- Cloudflare 检测到 `package.json` 会先自动跑 `npm install`。`puppeteer-core` 只在测试里用，不下载 Chromium，装起来很快
 - `dist/` 在 `.gitignore` 里，正常 —— 每次构建现生成
-- `_headers`、`404.html`、`robots.txt`、`sitemap.xml` 都随 `dist` 发布，Pages 会正确识别
-- 非 `main` 分支和 PR 会生成独立的预览部署，不动正式站
-- 免费额度 500 次构建/月、单日 100 次
-- 构建失败时 Pages 会继续用上一次成功的版本对外服务，站点不会挂。日志在 **Deployments → 点进那次构建**
+- `_headers`、`404.html`、`robots.txt`、`sitemap.xml` 都随 `dist` 发布，Workers 静态资源同样识别 `_headers`
+- 构建失败时会继续用上一次成功的版本对外服务，站点不会挂
 
-> 之前用拖拽上传建的那个项目还在。如果域名绑在它身上，记得去新项目的 **Custom domains** 里绑同一个域名（旧项目那边先 Remove），确认新站正常后再删旧项目 —— 否则以后自己都分不清是哪个在服务。
-
-#### 方式 C：命令行手动部署
+#### 方式 B：命令行手动部署（应急用）
 
 ```bash
-npm i -D wrangler
-npx wrangler login
-npm run deploy        # 等价于 build-dist + wrangler pages deploy dist --project-name=pixkit
+npm run dist          # 生成干净的 dist/ 目录
+npm run deploy        # 等价于 build-dist + wrangler deploy，读 wrangler.jsonc
 ```
 
-适合改完想立刻看线上效果、不想等 Cloudflare 构建的时候。
+首次使用需要 `npx wrangler login`。适合改完想立刻看线上效果、不想等 Cloudflare 构建的时候。
+
+想先看会发哪些文件、不发出去：
+
+```bash
+npm run deploy:dry
+```
+
+#### 顺序很关键：先修配置，再推代码
+
+`wrangler.jsonc` 是「发什么」的开关。如果先推代码、后加配置，中间这一版仍然会把整个仓库暴露出去。所以顺序是：
+
+1. 本地确认 `wrangler.jsonc` 已在仓库里
+2. push
+3. 等构建完，用上面那两条 `curl` 自查是不是 404
+4. 如果仍是 200，说明 Dashboard 里配的 assets 目录没被 `wrangler.jsonc` 覆盖 —— 去项目 Settings → Build 里检查 build/deploy command 是否按上表填的
 
 #### 绑定自己的域名
 
-1. Pages 项目 → **Custom domains** → **Set up a custom domain** → 输入 `你的域名`
+1. Worker 项目 → **Settings → Domains & Routes → Add → Custom domain**
 2. 如果域名已经托管在 Cloudflare：自动加 CNAME，通常几十秒生效
 3. 如果域名在别处（阿里云/腾讯云）：它会给你一个 CNAME 目标，去原服务商加一条解析
 
 **两个必踩的坑：**
 
-- **一定要先在 Pages 后台添加域名，再去配 DNS**。反过来操作会得到 522 错误。
+- **一定要先在 Cloudflare 后台添加域名，再去配 DNS**。反过来操作会得到 522 错误。
 - 如果域名配了 CAA 记录，要放行 Cloudflare 的证书机构，否则 HTTPS 证书签不下来。需要放行：`letsencrypt.org`、`pki.goog`、`ssl.com`。
-- 根域名（裸域 `example.com`）接入要求把 NS 服务器整体切到 Cloudflare；只想用子域名（`tools.example.com`）则 CNAME 即可。
+- 根域名（裸域）接入要求把 NS 服务器整体切到 Cloudflare；只想用子域名（`tools.your-domain.com`）则 CNAME 即可。
 
 #### `_headers` 文件
 
-项目根目录已经有 `_headers`，Cloudflare Pages 会自动读取并应用。当前配置：
+项目根目录已经有 `_headers`，构建时会进 `dist/`，Workers 静态资源会自动读取并应用（线上已验证生效）。当前配置：
 
 - HTML 不缓存（改了内容用户立刻能看到）
 - `/assets/*` 缓存 1 天（文件名没有 hash，不能设更长）
-- `/sw.js` 用 `no-store`、`/manifest.webmanifest` 用 1 小时 —— 规则要写在 `/*` 前面，Cloudflare 按从上到下的顺序匹配
+- `/sw.js` 用 `no-store`、`/manifest.webmanifest` 用 1 小时 —— 规则要写在 `/*` 前面，按从上到下的顺序匹配
 - 加了 `X-Content-Type-Options`、`Referrer-Policy` 等基础安全头
 
 没有配 CSP —— 页面里用了内联样式和 `data:` URI 图标，CSP 配不好会直接把站点搞坏，收益不大。
 
+> 想换回 Cloudflare Pages 也可以：删掉 `wrangler.jsonc`，把 `npm run deploy` 改回 `wrangler pages deploy dist --project-name=pixkit`，其余文件完全不用动。
+
 ### 方案三：其它平台
 
-Vercel、Netlify 也都能拖 `dist` 上去，配置方式和 Pages 类似。国内访问都不如自建服务器，就不再展开。
+Vercel、Netlify 也都能拖 `dist` 上去，配置方式类似。国内访问都不如自建服务器，就不再展开。
 
 ## ⚠️ 上线前必做
 
-1. **确认域名**：站内 `canonical`、`og:url`、`robots.txt`、`sitemap.xml` 现在统一指向 `https://pixkit.pages.dev`（13 个文件、23 处）。以后换域名时全局搜一遍：
+1. **确认域名**：站内 `canonical`、`og:url`、`robots.txt`、`sitemap.xml` 现在统一指向 `https://pixkit.1573834694.workers.dev`（13 个文件、23 处）。以后换域名时全局搜一遍：
 
    ```bash
-   grep -rl "pixkit.pages.dev" . --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=tests
+   grep -rl "pixkit.1573834694.workers.dev" . --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=tests
    ```
 
    改完记得重新 `npm run dist`，`dist/` 是生成物，不要直接改。
 
-   注意：一旦绑定了自定义域名，这里要改成**自定义域名**而不是 `pixkit.pages.dev`，否则搜索引擎会把权重记到 pages.dev 上。
+   注意：一旦绑定了自定义域名，这里要改成**自定义域名**而不是 `pixkit.1573834694.workers.dev`，否则搜索引擎把权重记到 workers.dev 上，换域名时全部白费。
 
-2. **备案**：服务器在国内必须备案，否则 80/443 端口会被拦截。Cloudflare Pages、Vercel 这类境外托管不需要备案 —— 但反过来说，它们也无法享受国内节点的加速。
+2. **部署配置自查**：确认仓库里有 `wrangler.jsonc`，且线上 `/tests/e2e-compress.mjs`、`/package.json` 都是 404。这两条只要有一条不满足，说明静态资源目录还指在仓库根。
 
-3. **HTTPS**：浏览器要求，且 AdSense 也要求。用 certbot 申请免费证书。
+3. **备案**：服务器在国内必须备案，否则 80/443 端口会被拦截。Cloudflare Workers、Vercel 这类境外托管不需要备案 —— 但反过来说，它们也无法享受国内节点的加速。
 
-4. **提交 sitemap**：在百度搜索资源平台、Google Search Console 里提交 `sitemap.xml`，然后手动提交几个核心页面的 URL 加速收录。
+4. **HTTPS**：浏览器要求，且 AdSense 也要求。Cloudflare 会自动签发；自建服务器用 certbot。
 
-5. **验证 SW 不被缓存**（PWA 最容易出问题的点）：
+5. **提交 sitemap**：在百度搜索资源平台、Google Search Console 里提交 `sitemap.xml`，然后手动提交几个核心页面的 URL 加速收录。
+
+6. **验证 SW 不被缓存**（PWA 最容易出问题的点）：
 
    ```bash
-   curl -I https://pixkit.pages.dev/sw.js | grep -i cache-control
+   curl -I https://pixkit.1573834694.workers.dev/sw.js | grep -i cache-control
    # 期望：no-cache, no-store, must-revalidate
    ```
 
