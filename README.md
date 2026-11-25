@@ -26,6 +26,8 @@
 - **中英双语**：中文是唯一源码，英文运行时替换，切换不刷新、选择会记住
 - **能装到桌面、断网可用**：manifest + Service Worker，装上之后连网络都不需要
 - **文本工具无依赖**：JSON / 时间戳 / Base64 解码全部手写，连格式化库都没引
+- **构建期打资源指纹**：`dist` 里每个 css/js 引用都带内容哈希，回访时这些请求一个都不会发出
+- **结构化数据由页面生成**：FAQPage JSON-LD 从页面可见问答里抽取，内容和 schema 不可能对不上
 
 ### 文件结构
 
@@ -41,7 +43,7 @@
 │   ├── css/style.css             全站样式
 │   ├── icons/                    PWA 图标（192 / 512 / 512-maskable / 180）
 │   └── js/
-│       ├── common.js             ZIP 打包 / 图片解码 / 格式检测 / 剪贴板
+│       ├── common.js             ZIP 打包 / 图片解码 / 格式检测 / 统一文件入口
 │       ├── i18n.js               语言判定、DOM 翻译、切换器
 │       ├── i18n.en.js            英文词典（站点 UI + 动态文案规则）
 │       ├── i18n.tools.js         英文词典（四个图片工具页 + EXIF 字段名）
@@ -68,6 +70,15 @@
     ├── b64img/index.html
     ├── timestamp/index.html
     └── json/index.html
+
+scripts/
+├── build-dist.mjs                 白名单打包 + 资源指纹 + 注入结构化数据
+└── faq.mjs                        从页面可见问答生成 FAQPage JSON-LD
+
+tests/
+├── build.mjs                      纯 Node：部署产物检查（30 项，秒级）
+├── e2e-drop.mjs                   拖拽 / 粘贴的统一行为（自己起服务器）
+└── e2e-*.mjs                      各功能的端到端测试
 ```
 
 ## 中英切换
@@ -331,13 +342,24 @@ npm run deploy:dry
 项目根目录已经有 `_headers`，构建时会进 `dist/`，Workers 静态资源会自动读取并应用（线上已验证生效）。当前配置：
 
 - HTML 不缓存（改了内容用户立刻能看到）
-- `/assets/*` 缓存 1 天（文件名没有 hash，不能设更长）
+- `/assets/css/*` 和 `/assets/js/*` 缓存**一年 + immutable** —— 构建时会给每个引用加上 `?v=<内容哈希>`，内容一变 URL 就变，不存在拿到旧文件的可能，回访时这些请求一个都不会发出
+- `/assets/icons/*` 只缓存 1 天：manifest 里写的是固定路径，加不了版本号，设一年的话换了图标用户一年都看不到
+- 注意 JS 模块之间的 `import './common.js'` 也会被构建脚本补上版本号 —— 只给 `<script src>` 加是不够的，入口更新了依赖还是旧的，这种半新半旧最容易出诡异 bug
 - `/sw.js` 用 `no-store`、`/manifest.webmanifest` 用 1 小时 —— 规则要写在 `/*` 前面，按从上到下的顺序匹配
 - 加了 `X-Content-Type-Options`、`Referrer-Policy` 等基础安全头
 
 没有配 CSP —— 页面里用了内联样式和 `data:` URI 图标，CSP 配不好会直接把站点搞坏，收益不大。
 
 > 想换回 Cloudflare Pages 也可以：删掉 `wrangler.jsonc`，把 `npm run deploy` 改回 `wrangler pages deploy dist --project-name=pixkit`，其余文件完全不用动。
+
+### 结构化数据
+
+每个工具页都有一个可见的「常见问题」区块，构建时由 `scripts/faq.mjs` 从这些区块里抽取问答，生成 `FAQPage` JSON-LD 注入 `<head>`。**内容只有一份来源**，改文案就重建，不会出现「页面说 A、schema 说 B」——那种不一致会让搜索引擎判定结构化数据造假，比没有 schema 更糟。
+
+两点要说清楚，免得期待错位：
+
+- **Google 从 2023 年起把 FAQ 富摘要收窄到政府、医疗等权威站点**，普通工具站基本不会再出折叠问答。这份数据的价值在于让搜索引擎准确理解页面在回答什么问题，以及 Bing 等引擎仍在用。别指望点击率因此暴涨。
+- 想验证是否被正确解析，用 [Rich Results Test](https://search.google.com/test/rich-results) 抓线上 URL；`npm run test:build` 也会检查 schema 条数和文字是否与页面逐条一致。
 
 ### 方案三：其它平台
 
@@ -434,18 +456,26 @@ Vercel、Netlify 也都能拖 `dist` 上去，配置方式类似。国内访问�
 
 ```bash
 npm install                    # 只装 puppeteer-core，用于端到端测试
-npm test                       # 跑全部测试（功能 + 中英切换 + 离线）
+npm test                       # 跑全部测试（164 项）
+npm run test:build             # 只测部署产物：白名单 / 资源指纹 / 结构化数据（纯 Node，秒级）
 npm run test:compress          # 只测压缩
 npm run test:idphoto           # 只测证件照
 npm run test:i18n              # 只测中英切换，含全站漏译扫描
 npm run test:text              # 只测 JSON / 时间戳 / Base64 解码
 npm run test:pwa               # 只测离线能力（自己起服务器，测完关掉）
+npm run test:drop              # 只测拖拽与粘贴（自己起服务器）
 npm run icons                  # 重新生成 PWA 图标
 ```
 
+`test:build` 跑在最前面，因为它不需要浏览器：仓库源码漏进 `dist`、资源忘了打版本号、FAQ 和页面文字对不上，这三类问题都会在这一步当场挂掉，不用等浏览器跑完十几分钟。
+
 测试会启动本机 Chrome 跑完整链路（真实生成图片 → 上传 → 压缩 → 校验输出尺寸；时间戳会跟 Node 算出的结果对账），截图输出到 `tests/.cache/`。
 
+注意大部分 e2e 测试连的是 `http://localhost:8899`，跑之前先开 `npm run dev`。`test:pwa` 和 `test:drop` 例外，它们自己起服务器。
+
 `test:pwa` 有个特别的地方：它**不能**用 `page.setOfflineMode` 来模拟断网。那个开关只作用于页面 target，而 Service Worker 跑在独立的 worker target 里，照样能联网 —— 于是「离线测试」全是假阳性。所以它自己在随机端口起一个静态服务器，测到一半真的 `server.close()` 掉，再验证缓存是否生效。
+
+`test:drop` 用合成的 `DragEvent` / `ClipboardEvent` 验证「丢在页面任意位置都算数」。这里有个坑：EXIF 只解析 JPEG，测试喂 PNG 会被正确拒绝 —— 那不是 bug，所以测试按页面分别用 PNG / JPEG。
 
 改完代码记得跑一遍，特别是 `common.js` 里的 ZIP 打包和格式检测 —— 这两块出问题不会报错，只会让下载的文件打不开。
 

@@ -290,3 +290,80 @@ export async function canEncode(mime) {
   supportCache.set(mime, ok);
   return ok;
 }
+
+/* ============================================================
+   统一的文件入口：点击 / 整页拖拽 / Ctrl+V 粘贴
+
+   以前每个工具各写一遍，结果行为不一致 —— 有的只能对准虚线框拖，
+   拖歪一点浏览器就把图片当新页面打开了。用户不会觉得"我没对准"，
+   只会觉得"这站坏了"。
+   ============================================================ */
+
+const IMAGE_RE = /\.(jpe?g|png|webp|gif|bmp|avif|heic|heif)$/i;
+
+function pickFiles(list, multiple) {
+  const files = [...(list || [])].filter(
+    f => f && (f.type.startsWith('image/') || IMAGE_RE.test(f.name || ''))
+  );
+  return multiple ? files : files.slice(0, 1);
+}
+
+/**
+ * @param {object} opts
+ * @param {HTMLElement} opts.zone      虚线框（点它等于点隐藏的 input）
+ * @param {HTMLInputElement} opts.input
+ * @param {(files: File[]) => void} opts.onFiles  永远是数组，单选页面取 [0]
+ * @param {boolean} [opts.multiple]
+ */
+export function bindFilePicker({ zone, input, onFiles, multiple = false }) {
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+
+  input.addEventListener('change', () => {
+    const files = pickFiles(input.files, multiple);
+    if (files.length) onFiles(files);
+  });
+
+  /* 框内高亮：用计数器而不是直接 toggle，
+     否则从 summary 拖到子元素上会闪一下（dragleave 先于 dragenter） */
+  let depth = 0;
+  zone.addEventListener('dragenter', e => {
+    e.preventDefault();
+    depth++;
+    zone.classList.add('is-over');
+  });
+  zone.addEventListener('dragover', e => e.preventDefault());
+  zone.addEventListener('dragleave', e => {
+    e.preventDefault();
+    if (--depth <= 0) { depth = 0; zone.classList.remove('is-over'); }
+  });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    depth = 0;
+    zone.classList.remove('is-over');
+    const files = pickFiles(e.dataTransfer?.files, multiple);
+    if (files.length) onFiles(files);
+  });
+
+  /* 整页拖放：不拦 dragover 浏览器会直接打开这张图，页面就没了 */
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    if (zone.contains(e.target)) return;  // 框内的交给上面处理，别吃两次
+    const files = pickFiles(e.dataTransfer?.files, multiple);
+    if (files.length) onFiles(files);
+  });
+
+  document.addEventListener('paste', e => {
+    const items = [...(e.clipboardData?.items || [])];
+    const files = items
+      .filter(it => it.kind === 'file' && it.type.startsWith('image/'))
+      .map(it => it.getAsFile())
+      .filter(Boolean);
+    if (!files.length) return;
+    e.preventDefault();
+    onFiles(multiple ? files : files.slice(0, 1));
+  });
+}

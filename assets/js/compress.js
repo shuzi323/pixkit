@@ -4,7 +4,7 @@
 
 import {
   formatBytes, toast, download, esc, baseName, extName, uniqueName,
-  ZipWriter, decodeImage, makeCanvas, canvasToBlob, canEncode
+  ZipWriter, decodeImage, makeCanvas, canvasToBlob, canEncode, bindFilePicker
 } from './common.js';
 import { t } from './i18n.js';
 import { openCompare, close as closeCompare } from './compare.js';
@@ -448,58 +448,11 @@ function clearAll() {
 
 /* ---------------- 事件绑定 ---------------- */
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
-});
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files?.length) addFiles(fileInput.files);
-});
-
-['dragenter', 'dragover'].forEach(ev =>
-  dropzone.addEventListener(ev, e => {
-    e.preventDefault();
-    dropzone.classList.add('is-over');
-  })
-);
-
-['dragleave', 'drop'].forEach(ev =>
-  dropzone.addEventListener(ev, e => {
-    e.preventDefault();
-    dropzone.classList.remove('is-over');
-  })
-);
-
-dropzone.addEventListener('drop', e => {
-  const files = e.dataTransfer?.files;
-  if (files?.length) addFiles(files);
-});
-
-// 整页拖放（防止浏览器直接打开图片）
-window.addEventListener('dragover', e => e.preventDefault());
-window.addEventListener('drop', e => {
-  e.preventDefault();
-  if (e.target.closest('#dropzone')) return;
-  const files = e.dataTransfer?.files;
-  if (files?.length) addFiles(files);
-});
-
-// 粘贴
-document.addEventListener('paste', e => {
-  const items = e.clipboardData?.items;
-  if (!items) return;
-  const files = [];
-  for (const it of items) {
-    if (it.kind === 'file' && it.type.startsWith('image/')) {
-      const f = it.getAsFile();
-      if (f) files.push(f);
-    }
-  }
-  if (files.length) {
-    e.preventDefault();
-    addFiles(files);
-  }
+bindFilePicker({
+  zone: dropzone,
+  input: fileInput,
+  multiple: true,
+  onFiles: addFiles,
 });
 
 /* 参数控件 */

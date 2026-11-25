@@ -2,7 +2,7 @@
    图片取色器
    ============================================================ */
 
-import { toast, copyText, decodeImage } from './common.js';
+import { toast, copyText, decodeImage, bindFilePicker } from './common.js';
 
 const $ = id => document.getElementById(id);
 
@@ -307,38 +307,8 @@ async function handleFile(file) {
   }
 }
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files?.[0]) handleFile(fileInput.files[0]);
-});
-
-['dragenter', 'dragover'].forEach(ev =>
-  dropzone.addEventListener(ev, e => {
-    e.preventDefault();
-    dropzone.classList.add('is-over');
-  })
-);
-['dragleave', 'drop'].forEach(ev =>
-  dropzone.addEventListener(ev, e => {
-    e.preventDefault();
-    dropzone.classList.remove('is-over');
-  })
-);
-dropzone.addEventListener('drop', e => {
-  const f = e.dataTransfer?.files?.[0];
-  if (f) handleFile(f);
-});
-
-document.addEventListener('paste', e => {
-  const items = e.clipboardData?.items;
-  if (!items) return;
-  for (const it of items) {
-    if (it.kind === 'file' && it.type.startsWith('image/')) {
-      const f = it.getAsFile();
-      if (f) { e.preventDefault(); handleFile(f); return; }
-    }
-  }
+bindFilePicker({
+  zone: dropzone,
+  input: fileInput,
+  onFiles: files => handleFile(files[0]),
 });

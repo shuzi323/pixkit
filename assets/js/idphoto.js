@@ -2,7 +2,7 @@
    证件照：精确裁剪 + 排版打印
    ============================================================ */
 
-import { toast, download, decodeImage } from './common.js';
+import { toast, download, decodeImage, bindFilePicker } from './common.js';
 import { getLang } from './i18n.js';
 
 const DPI = 300;
@@ -218,29 +218,10 @@ async function loadFile(file) {
   }
 }
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('keydown', e => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
-});
-fileInput.addEventListener('change', () => {
-  if (fileInput.files?.[0]) loadFile(fileInput.files[0]);
-});
-
-['dragenter', 'dragover'].forEach(ev =>
-  dropzone.addEventListener(ev, e => {
-    e.preventDefault();
-    dropzone.classList.add('is-over');
-  })
-);
-['dragleave', 'drop'].forEach(ev =>
-  dropzone.addEventListener(ev, e => {
-    e.preventDefault();
-    dropzone.classList.remove('is-over');
-  })
-);
-dropzone.addEventListener('drop', e => {
-  const f = e.dataTransfer?.files?.[0];
-  if (f) loadFile(f);
+bindFilePicker({
+  zone: dropzone,
+  input: fileInput,
+  onFiles: files => loadFile(files[0]),
 });
 
 /* ---------------- 导出 ---------------- */
