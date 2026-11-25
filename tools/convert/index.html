@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>在线图片格式转换 — HEIC/WebP/PNG/JPG 互转，不上传 | PixKit</title>
+<meta name="description" content="免费在线图片格式转换工具。支持 JPG、PNG、WebP、AVIF、HEIC、GIF、BMP 互相转换，可批量、可打包下载。全部在浏览器本地完成，图片不上传服务器。">
+<meta name="keywords" content="图片格式转换,heic转jpg,webp转png,png转jpg,在线转换图片格式,批量格式转换">
+<link rel="canonical" href="https://example.com/tools/convert/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="在线图片格式转换 — HEIC/WebP/PNG/JPG 互转，不上传 | PixKit">
+<meta property="og:description" content="免费在线图片格式转换工具。支持 JPG、PNG、WebP、AVIF、HEIC、GIF、BMP 互相转换，可批量、可打包下载。全部在浏览器本地完成，图片不上传服务器。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M10 22V10h5.5a3.5 3.5 0 010 7H12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="/" class="logo">
+      <span class="logo__mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+      </span>
+      PixKit
+    </a>
+    <nav class="nav">
+      <a href="/tools/compress/">图片压缩</a>
+      <a href="/tools/idphoto/">证件照</a>
+      <a href="/">全部工具</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="wrap">
+    <div class="tool-head">
+      <div class="tool-head__crumb"><a href="/">首页</a> / 格式转换</div>
+      <h1>在线图片格式转换</h1>
+      <p>JPG、PNG、WebP、AVIF、GIF、BMP 互相转换，支持批量处理。转换在你的浏览器内完成，图片不会上传到任何服务器。</p>
+    </div>
+
+    <div class="privacy-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>本地处理：图片不会离开你的设备。可以按 F12 打开网络面板自行验证。</span>
+    </div>
+
+    <!-- 拖拽区 -->
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="选择或拖入图片">
+      <div class="dropzone__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
+      </div>
+      <div class="dropzone__title">拖入图片，或点击选择</div>
+      <div class="dropzone__hint">支持 JPG / PNG / WebP / GIF / BMP / AVIF · 也可以直接 <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴</div>
+      <input type="file" id="fileInput" accept="image/*" multiple class="visually-hidden">
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="panel hidden" id="panel">
+      <div class="panel__title">压缩设置</div>
+      <div class="controls">
+
+        <div class="field">
+          <label for="mode">压缩方式</label>
+          <select id="mode">
+            <option value="quality">按质量（推荐）</option>
+            <option value="target">按目标大小</option>
+          </select>
+        </div>
+
+        <div class="field" id="qualityField">
+          <label for="quality">画质 <span class="val" id="qualityVal">92</span></label>
+          <input type="range" id="quality" min="10" max="100" value="92" step="1">
+        </div>
+
+        <div class="field hidden" id="targetField">
+          <label for="targetSize">目标大小</label>
+          <div class="target-input">
+            <input type="number" id="targetSize" min="10" max="20000" step="10" value="200" inputmode="numeric">
+            <span class="unit">KB</span>
+          </div>
+          <div class="chips" id="targetChips">
+            <button type="button" data-kb="100">100</button>
+            <button type="button" data-kb="200">200</button>
+            <button type="button" data-kb="500">500</button>
+            <button type="button" data-kb="1024">1 MB</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="format">输出格式</label>
+          <select id="format">
+            <option value="auto">自动（智能选择）</option>
+            <option value="image/jpeg" selected>JPG</option>
+            <option value="image/webp">WebP（体积最小）</option>
+            <option value="image/png">PNG（无损）</option>
+            <option value="image/avif">AVIF</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="maxEdge">最大边长 <span class="val" id="edgeVal">不限</span></label>
+          <input type="range" id="maxEdge" min="0" max="6000" value="0" step="100">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 结果 -->
+    <div class="results hidden" id="results">
+      <div class="results__head">
+        <div class="results__stat" id="summary"></div>
+        <div class="results__actions">
+          <button class="btn btn--ghost btn--sm" id="clearBtn" type="button">清空</button>
+          <button class="btn btn--primary btn--sm" id="zipBtn" type="button">全部下载 (.zip)</button>
+        </div>
+      </div>
+      <div id="fileList"></div>
+    </div>
+
+    <!-- 说明 -->
+    <div class="prose" style="padding: 48px 0 56px;">
+      <h2>不同图片格式适合什么场景</h2>
+      <p>
+        选错格式是图片体积虚高的最常见原因。一张该用 WebP 的照片存成 PNG，体积可能是前者的十倍以上。
+        下面这张表可以直接照着用：
+      </p>
+      <div style="overflow-x:auto;margin:20px 0">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead>
+            <tr style="background:var(--bg-2)">
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)">格式</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)">适合</th>
+              <th style="text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)">不适合</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>JPG</strong></td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">照片、人像、风景</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">需要透明背景、纯色图标</td></tr>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>PNG</strong></td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">图标、截图、需要透明的图</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">大尺寸照片，体积会失控</td></tr>
+            <tr><td style="padding:10px 12px;border-bottom:1px solid var(--line)"><strong>WebP</strong></td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">网页配图，兼顾体积和画质</td><td style="padding:10px 12px;border-bottom:1px solid var(--line)">发给老版本 Office / 旧电脑</td></tr>
+            <tr><td style="padding:10px 12px"><strong>AVIF</strong></td><td style="padding:10px 12px">极致压缩，比 WebP 再小 20%</td><td style="padding:10px 12px">兼容性一般，编码也慢</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>iPhone 的 HEIC 怎么办</h2>
+      <p>
+        iPhone 默认用 HEIC 格式拍照，体积比 JPG 小一半，但很多 Windows 软件和网站打不开。
+        多数情况下的解决办法是转成 JPG。转换后会略微变大，这是正常的 —— JPG 的压缩效率确实不如 HEIC。
+      </p>
+      <div class="note">
+        <strong>注意：</strong>本工具直接调用浏览器的解码能力，Safari 可以处理 HEIC，Chrome 暂不支持。
+        如果你在 Chrome 里遇到 HEIC 无法识别，请用 Safari 打开，或先在手机端「设置 → 相机 → 格式」改为「兼容性最佳」。
+      </div>
+
+      <h2>转换会损失画质吗</h2>
+      <p>
+        转成有损格式（JPG、WebP、AVIF）会，但把质量设在 90 以上时，损失通常无法用肉眼分辨。
+        转成 PNG 是无损的，但体积会明显变大。反过来，PNG 转 JPG 或 WebP 一定会损失透明通道 ——
+        透明区域会变成白色。
+      </p>
+
+      <h2>常见问题</h2>
+      <div class="faq">
+        <details>
+          <summary>批量转换会不会很慢</summary>
+          <div class="faq__body"><p>转换速度取决于你的电脑。一般一张 2000 万像素的照片需要 0.2–0.5 秒，100 张大约半分钟。转换期间不要关闭页面。</p></div>
+        </details>
+        <details>
+          <summary>转换后文件名会变吗</summary>
+          <div class="faq__body"><p>会保留原文件名，只把扩展名换成新格式。打包下载时如果重名会自动加序号。</p></div>
+        </details>
+        <details>
+          <summary>支持 RAW 格式吗</summary>
+          <div class="faq__body"><p>目前不支持 CR2、NEF、ARW 等相机 RAW 格式，浏览器没有内置解码器。需要先导出成 JPG 或 TIFF。</p></div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <div>
+      <div class="logo" style="margin-bottom:8px">
+        <span class="logo__mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+        </span>
+        PixKit
+      </div>
+      <div>所有处理在你的浏览器本地完成。</div>
+    </div>
+    <div class="footer__links">
+      <a href="/">全部工具</a>
+      <a href="/tools/idphoto/">证件照</a>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/assets/js/compress.js"></script>
+</body>
+</html>

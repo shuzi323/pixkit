@@ -1,0 +1,19 @@
+# Cloudflare Pages 响应头配置
+# 文档：https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# 静态资源：文件名没有 hash，不能设 immutable，缓存 1 天比较稳妥
+/assets/*
+  Cache-Control: public, max-age=86400
+
+# HTML 必须每次校验，否则改了内容用户看不到
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate

@@ -1,0 +1,26 @@
+{
+  "name": "pixkit",
+  "version": "1.0.0",
+  "description": "纯前端在线图片工具站：压缩、证件照、格式转换、改尺寸",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8899",
+    "dist": "node scripts/build-dist.mjs",
+    "deploy": "npm run dist && npx wrangler pages deploy dist --project-name=pixkit",
+    "test": "node tests/e2e-compress.mjs && node tests/e2e-idphoto.mjs && node tests/e2e-devtools.mjs",
+    "test:compress": "node tests/e2e-compress.mjs",
+    "test:idphoto": "node tests/e2e-idphoto.mjs",
+    "test:dev": "node tests/e2e-devtools.mjs"
+  },
+  "keywords": [
+    "image-compression",
+    "id-photo",
+    "static-site",
+    "no-build"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "puppeteer-core": "^25.18.1"
+  }
+}

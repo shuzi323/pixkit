@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>在线批量修改图片尺寸 — 按像素等比缩放，不上传 | PixKit</title>
+<meta name="description" content="免费在线批量调整图片尺寸。按像素或最大边长等比缩放，不会变形，可批量处理并打包下载。全部在浏览器本地完成，图片不上传服务器。">
+<meta name="keywords" content="批量修改图片尺寸,在线调整图片大小,图片缩放,改图片分辨率,批量resize">
+<link rel="canonical" href="https://example.com/tools/resize/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="在线批量修改图片尺寸 — 按像素等比缩放，不上传 | PixKit">
+<meta property="og:description" content="免费在线批量调整图片尺寸。按像素或最大边长等比缩放，不会变形，可批量处理并打包下载。全部在浏览器本地完成，图片不上传服务器。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M10 22V10h5.5a3.5 3.5 0 010 7H12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="/" class="logo">
+      <span class="logo__mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+      </span>
+      PixKit
+    </a>
+    <nav class="nav">
+      <a href="/tools/compress/">图片压缩</a>
+      <a href="/tools/idphoto/">证件照</a>
+      <a href="/">全部工具</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="wrap">
+    <div class="tool-head">
+      <div class="tool-head__crumb"><a href="/">首页</a> / 批量改尺寸</div>
+      <h1>在线批量修改图片尺寸</h1>
+      <p>设置最大边长，所有图片按比例缩放，不会变形。支持批量处理和打包下载，全部在本地完成。</p>
+    </div>
+
+    <div class="privacy-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>本地处理：图片不会离开你的设备。可以按 F12 打开网络面板自行验证。</span>
+    </div>
+
+    <!-- 拖拽区 -->
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="选择或拖入图片">
+      <div class="dropzone__icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v13"/></svg>
+      </div>
+      <div class="dropzone__title">拖入图片，或点击选择</div>
+      <div class="dropzone__hint">支持 JPG / PNG / WebP / GIF / BMP / AVIF · 也可以直接 <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴</div>
+      <input type="file" id="fileInput" accept="image/*" multiple class="visually-hidden">
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="panel hidden" id="panel">
+      <div class="panel__title">压缩设置</div>
+      <div class="controls">
+
+        <div class="field">
+          <label for="mode">压缩方式</label>
+          <select id="mode">
+            <option value="quality">按质量（推荐）</option>
+            <option value="target">按目标大小</option>
+          </select>
+        </div>
+
+        <div class="field" id="qualityField">
+          <label for="quality">画质 <span class="val" id="qualityVal">88</span></label>
+          <input type="range" id="quality" min="10" max="100" value="88" step="1">
+        </div>
+
+        <div class="field hidden" id="targetField">
+          <label for="targetSize">目标大小</label>
+          <div class="target-input">
+            <input type="number" id="targetSize" min="10" max="20000" step="10" value="200" inputmode="numeric">
+            <span class="unit">KB</span>
+          </div>
+          <div class="chips" id="targetChips">
+            <button type="button" data-kb="100">100</button>
+            <button type="button" data-kb="200">200</button>
+            <button type="button" data-kb="500">500</button>
+            <button type="button" data-kb="1024">1 MB</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="format">输出格式</label>
+          <select id="format">
+            <option value="auto">自动（智能选择）</option>
+            <option value="image/jpeg">JPG</option>
+            <option value="image/webp">WebP（体积最小）</option>
+            <option value="image/png">PNG（无损）</option>
+            <option value="image/avif">AVIF</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="maxEdge">最大边长 <span class="val" id="edgeVal">1200 px</span></label>
+          <input type="range" id="maxEdge" min="0" max="6000" value="1200" step="100">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 结果 -->
+    <div class="results hidden" id="results">
+      <div class="results__head">
+        <div class="results__stat" id="summary"></div>
+        <div class="results__actions">
+          <button class="btn btn--ghost btn--sm" id="clearBtn" type="button">清空</button>
+          <button class="btn btn--primary btn--sm" id="zipBtn" type="button">全部下载 (.zip)</button>
+        </div>
+      </div>
+      <div id="fileList"></div>
+    </div>
+
+    <!-- 说明 -->
+    <div class="prose" style="padding: 48px 0 56px;">
+      <h2>常见场景该用多大尺寸</h2>
+      <p>
+        尺寸设太大浪费空间，设太小会糊。下面是几个高频场景的推荐值：
+      </p>
+      <ul>
+        <li><strong>微信公众号封面</strong>：900 × 383，正文配图宽度 1080 足够</li>
+        <li><strong>小红书 / 抖音</strong>：竖图 1080 × 1440</li>
+        <li><strong>淘宝 / 京东主图</strong>：800 × 800 起，部分类目要求 1200 × 1200</li>
+        <li><strong>网页配图</strong>：宽度 1200–1600，配合 WebP 格式</li>
+        <li><strong>邮件附件 / 微信发送</strong>：长边 1600 以内，肉眼几乎无损</li>
+        <li><strong>打印 A4</strong>：300dpi 下需要 2480 × 3508</li>
+      </ul>
+
+      <h2>「最大边长」是什么意思</h2>
+      <p>
+        它是长和宽中较长的那条边。比如一张 4000 × 3000 的横图，设最大边长 1200，
+        会缩成 1200 × 900 —— 按比例缩，不会拉扁。
+      </p>
+      <p>
+        小于这个值的图片<b>不会被放大</b>。放大只会变模糊，没有意义，所以工具会自动跳过。
+      </p>
+
+      <h2>为什么不能单独设宽和高</h2>
+      <p>
+        因为同时指定宽和高就一定会变形 —— 除非恰好等于原图比例。真要做非等比拉伸（比如把方形拉成宽幅），
+        那属于「裁剪」范畴，不是缩放。这个工具故意只提供等比缩放，避免你一不小心把照片压扁了。
+      </p>
+
+      <h2>常见问题</h2>
+      <div class="faq">
+        <details>
+          <summary>缩小尺寸会损失画质吗</summary>
+          <div class="faq__body"><p>会重采样，但视觉上通常更好看 —— 缩小能抹掉噪点和细节瑕疵。真正会糊的是放大。</p></div>
+        </details>
+        <details>
+          <summary>一次能改多少张</summary>
+          <div class="faq__body"><p>数量不限，但受限于电脑内存。建议单批不超过 100 张，或分几次处理。</p></div>
+        </details>
+        <details>
+          <summary>能只改宽度不管高度吗</summary>
+          <div class="faq__body"><p>当图片是竖图时，设最大边长等于你想要的宽度，效果就是「宽度固定、高度按比例」。横图则相反。这是等比缩放的必然结果。</p></div>
+        </details>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <div>
+      <div class="logo" style="margin-bottom:8px">
+        <span class="logo__mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+        </span>
+        PixKit
+      </div>
+      <div>所有处理在你的浏览器本地完成。</div>
+    </div>
+    <div class="footer__links">
+      <a href="/">全部工具</a>
+      <a href="/tools/idphoto/">证件照</a>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/assets/js/compress.js"></script>
+</body>
+</html>
