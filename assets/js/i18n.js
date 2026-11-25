@@ -17,6 +17,15 @@ const CJK = /[\u4e00-\u9fa5]/;
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'CODE', 'PRE']);
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
 
+// 句子里用 <code> 断开后，标点会单独成一个文本节点。
+// 它不含汉字，靠 CJK 判定永远轮不到它 —— 英文界面就会留一个中文句号。
+const PUNCT = /^[。，、；：！？（）「」『』“”‘’…—-]+$/;
+const PUNCT_MAP = {
+  '。': '.', '，': ',', '、': ',', '；': ';', '：': ':', '！': '!', '？': '?',
+  '（': '(', '）': ')', '「': '"', '」': '"', '『': "'", '』': "'",
+  '“': '"', '”': '"', '‘': "'", '’': "'", '…': '…', '—': '—', '-': '-',
+};
+
 let lang = detectLang();
 
 const origText = new WeakMap();   // Text -> 中文原文
@@ -46,6 +55,7 @@ export function detectLang() {
 function lookup(key) {
   const hit = EN[key];
   if (hit != null) return hit;
+  if (PUNCT.test(key)) return [...key].map(c => PUNCT_MAP[c] ?? c).join('');
   for (const [re, fn] of RULES) {
     const m = key.match(re);
     if (m) return fn(m);
@@ -76,7 +86,11 @@ function translatableTextNodes(root) {
     acceptNode(n) {
       // 注意：不能只看「当前文本含中文」。切回中文时页面已经是英文，
       // 必须靠 origText 里有没有记录来决定是否处理，否则永远还原不回去。
-      if (!origText.has(n) && !CJK.test(n.nodeValue || '')) return NodeFilter.FILTER_REJECT;
+      const v = n.nodeValue || '';
+      const t = v.trim();
+      if (!origText.has(n) && !CJK.test(v) && !(t && PUNCT.test(t))) {
+        return NodeFilter.FILTER_REJECT;
+      }
       const p = n.parentElement;
       if (!p || SKIP_TAGS.has(p.tagName) || p.closest('[data-i18n-skip]')) {
         return NodeFilter.FILTER_REJECT;

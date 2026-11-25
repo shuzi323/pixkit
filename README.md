@@ -1,6 +1,6 @@
-# PixKit — 纯前端图片工具站
+# PixKit — 纯前端工具站（图片 + 开发者）
 
-一个零成本运行的在线图片工具站。所有图片处理都在用户浏览器里完成，服务器只负责发静态文件。
+一个零成本运行的在线工具站。所有处理都在用户浏览器里完成，服务器只负责发静态文件。
 
 ## 现在有什么
 
@@ -13,6 +13,9 @@
 | 图片转 Base64 | `/tools/base64/` | Data URI / CSS / HTML / Markdown 四种格式输出 |
 | 图片取色器 | `/tools/picker/` | 像素放大镜取色，HEX/RGB/HSL 复制，自动提取主色板 |
 | 清除照片 EXIF | `/tools/exif/` | 解析 GPS/设备/时间信息，无损删除（不重新编码） |
+| Base64 转图片 | `/tools/b64img/` | 靠字节魔数识别真实格式，纯 Base64 也能解，直接下载 |
+| 时间戳转换 | `/tools/timestamp/` | 秒/毫秒/微秒自动识别 + 手动指定，同时给本地/UTC/ISO/相对时间 |
+| JSON 格式化与排序 | `/tools/json/` | 美化、压缩、键名递归排序，报错定位到行列并给出修改建议 |
 
 ## 技术特点
 
@@ -21,6 +24,7 @@
 - **手写 ZIP 打包**：`assets/js/common.js` 里 100 行实现的 store 模式 ZIP，不引入 JSZip
 - **架构即隐私**：服务器上没有接收图片的接口，用户想验证也验证不出东西来
 - **中英双语**：中文是唯一源码，英文运行时替换，切换不刷新、选择会记住
+- **文本工具无依赖**：JSON / 时间戳 / Base64 解码全部手写，连格式化库都没引
 
 ### 文件结构
 
@@ -36,12 +40,16 @@
 │       ├── common.js             ZIP 打包 / 图片解码 / 格式检测 / 剪贴板
 │       ├── i18n.js               语言判定、DOM 翻译、切换器
 │       ├── i18n.en.js            英文词典（站点 UI + 动态文案规则）
-│       ├── i18n.tools.js         英文词典（四个工具页 + EXIF 字段名）
+│       ├── i18n.tools.js         英文词典（四个图片工具页 + EXIF 字段名）
+│       ├── i18n.text.js          英文词典（三个文本工具页）
 │       ├── compress.js           压缩引擎（convert / resize 也复用这个）
 │       ├── idphoto.js            证件照
 │       ├── base64.js             图片转 Base64
 │       ├── picker.js             取色器
-│       └── exif.js               EXIF 解析与无损清除
+│       ├── exif.js               EXIF 解析与无损清除
+│       ├── b64img.js             Base64 转图片（魔数嗅探）
+│       ├── timestamp.js          时间戳换算
+│       └── json.js               JSON 格式化 / 排序 / 错误定位
 └── tools/
     ├── compress/index.html
     ├── idphoto/index.html
@@ -49,7 +57,10 @@
     ├── resize/index.html
     ├── base64/index.html
     ├── picker/index.html
-    └── exif/index.html
+    ├── exif/index.html
+    ├── b64img/index.html
+    ├── timestamp/index.html
+    └── json/index.html
 ```
 
 ## 中英切换
@@ -84,7 +95,7 @@
 # 2. 跑测试，它会列出还没翻译的句子
 npm run test:i18n
 
-# 3. 把缺的句子补进 assets/js/i18n.en.js（或 i18n.tools.js）
+# 3. 把缺的句子补进 assets/js/i18n.en.js / i18n.tools.js / i18n.text.js
 ```
 
 测试会输出「剩余中文 N 处」和「词典缺失 xxx」，按提示补即可，不会漏。
@@ -92,6 +103,10 @@ npm run test:i18n
 ### 已知限制：英文内容不进搜索引擎
 
 英文是运行时替换的，爬虫拿到的 HTML 仍是中文。对中文站没影响，但如果要做英文 SEO，需要给英文独立路径（`/en/tools/compress/`）静态输出，或者用 Cloudflare 的 Transform Rules 按 `Accept-Language` 做边缘改写。现在没做，因为英文流量还没到需要它的量级。
+
+### 已知限制：词典随每个页面加载
+
+三个词典文件（`i18n.en.js` / `i18n.tools.js` / `i18n.text.js`）合计约 35KB（gzip），由 `i18n.js` 静态 import —— 中文访客也要下载。换来的是零闪烁：语言在首屏渲染前就定了，不会先闪一下中文再变英文。如果以后英文流量很低、又在意首屏，可以改成 `lang === 'en'` 时动态 `import()`，代价是英文访客会看到一瞬中文。
 
 
 ## 本地预览
@@ -308,9 +323,10 @@ npm test                       # 跑全部测试（功能 + 中英切换）
 npm run test:compress          # 只测压缩
 npm run test:idphoto           # 只测证件照
 npm run test:i18n              # 只测中英切换，含全站漏译扫描
+npm run test:text              # 只测 JSON / 时间戳 / Base64 解码
 ```
 
-测试会启动本机 Chrome 跑完整链路（包括真实生成图片 → 上传 → 压缩 → 校验输出尺寸），截图输出到 `tests/.cache/`。
+测试会启动本机 Chrome 跑完整链路（真实生成图片 → 上传 → 压缩 → 校验输出尺寸；时间戳会跟 Node 算出的结果对账），截图输出到 `tests/.cache/`。
 
 改完代码记得跑一遍，特别是 `common.js` 里的 ZIP 打包和格式检测 —— 这两块出问题不会报错，只会让下载的文件打不开。
 

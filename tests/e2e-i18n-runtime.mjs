@@ -119,8 +119,53 @@ try {
   await new Promise(r => setTimeout(r, 1200));
   await report('取色器', page);
 
+  /* ---- Base64 转图片 ---- */
+  log('\n[6] Base64 转图片（示例 → 元信息）');
+  page = await enPage('/tools/b64img/');
+  await page.click('#sampleBtn');
+  await new Promise(r => setTimeout(r, 500));
+  await report('Base64 转图片', page);
+  const metaEn = await page.$eval('#meta', el => el.textContent.replace(/\s+/g, ' ').trim());
+  ok(/Format/.test(metaEn) && /Dimensions/.test(metaEn), `元信息 = "${metaEn}"`);
+
+  await page.$eval('#input', el => {
+    el.value = 'not-base64!!!';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await new Promise(r => setTimeout(r, 450));
+  await report('Base64 转图片（报错态）', page);
+
+  /* ---- 时间戳 ---- */
+  log('\n[7] 时间戳转换（换算 → 相对时间）');
+  page = await enPage('/tools/timestamp/');
+  await page.$eval('#tsIn', el => {
+    el.value = '1700000000';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await new Promise(r => setTimeout(r, 300));
+  await report('时间戳', page);
+  const relEn = await page.$$eval('#tsKv .kv__v', els => els[4].textContent.trim());
+  ok(/\b(ago|from now)\b|just now/.test(relEn), `相对时间 = "${relEn}"`);
+
+  /* ---- JSON ---- */
+  log('\n[8] JSON（格式化 → 报错态）');
+  page = await enPage('/tools/json/');
+  await page.click('#sampleBtn');
+  await page.select('#sortSel', 'asc');
+  await new Promise(r => setTimeout(r, 450));
+  await report('JSON 格式化', page);
+  const statEn = await page.$eval('#stats', el => el.textContent.replace(/\s+/g, ' ').trim());
+  ok(/Depth/.test(statEn) && /Keys/.test(statEn), `统计 = "${statEn}"`);
+
+  await page.$eval('#input', el => {
+    el.value = '{"a": 1,}';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await new Promise(r => setTimeout(r, 500));
+  await report('JSON 报错态', page);
+
   /* ---- 结果已渲染后再切换语言 ---- */
-  log('\n[6] 已有结果时来回切换（英文 → 中文 → 英文）');
+  log('\n[9] 已有结果时来回切换（英文 → 中文 → 英文）');
   page = await enPage('/tools/compress/');
   input = await page.$('#fileInput');
   await input.uploadFile(f1);

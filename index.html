@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PixKit — 免费在线图片工具，本地处理不上传</title>
-<meta name="description" content="免费在线图片压缩、证件照制作、格式转换工具。所有处理都在你的浏览器里完成，图片不会上传到任何服务器，无数量限制，无水印。">
-<meta name="keywords" content="图片压缩,在线压缩图片,证件照制作,图片转格式,批量压缩图片,本地处理,不上传">
+<title>PixKit — 免费在线图片与开发者工具，本地处理不上传</title>
+<meta name="description" content="免费在线图片压缩、证件照、格式转换，以及 JSON 格式化、时间戳转换、Base64 编解码等开发者工具。所有处理都在浏览器本地完成，文件不上传，无数量限制。">
+<meta name="keywords" content="图片压缩,在线压缩图片,证件照制作,图片转格式,json格式化,时间戳转换,base64转图片,本地处理,不上传">
 <link rel="canonical" href="https://example.com/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="PixKit — 免费在线图片工具，本地处理不上传">
-<meta property="og:description" content="图片压缩、证件照制作、格式转换。全部在浏览器本地完成，不上传、不限量、无水印。">
+<meta property="og:title" content="PixKit — 免费在线图片与开发者工具，本地处理不上传">
+<meta property="og:description" content="图片压缩、证件照、格式转换，以及 JSON、时间戳、Base64 等开发者工具。全部在浏览器本地完成，不上传、不限量。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M10 22V10h5.5a3.5 3.5 0 010 7H12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <link rel="stylesheet" href="/assets/css/style.css">
 <script type="module" src="/assets/js/i18n.js"></script>
@@ -100,6 +100,15 @@
           <p>生成 Data URI、CSS、HTML、Markdown 四种格式，一键复制，省掉一次 HTTP 请求。</p>
         </a>
 
+        <a href="/tools/b64img/" class="card">
+          <span class="card__tag card__tag--dev">开发者</span>
+          <div class="card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/><path d="M14 4l-4 16"/></svg>
+          </div>
+          <h3>Base64 转图片</h3>
+          <p>粘贴 Data URI 或纯 Base64，靠字节头自动识别真实格式，还原成图片直接下载。</p>
+        </a>
+
         <a href="/tools/picker/" class="card">
           <span class="card__tag card__tag--dev">开发者</span>
           <div class="card__icon">
@@ -117,13 +126,31 @@
           <h3>清除照片 EXIF</h3>
           <p>看清照片里的 GPS 定位和相机型号，一键删掉。无损处理，不重新编码，画质不变。</p>
         </a>
+        <a href="/tools/timestamp/" class="card">
+          <span class="card__tag card__tag--dev">开发者</span>
+          <div class="card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          </div>
+          <h3>时间戳转换</h3>
+          <p>Unix 时间戳与日期互转，秒 / 毫秒 / 微秒自动识别，同时给出 UTC 和 ISO 8601。</p>
+        </a>
 
-        <div class="card card--soon">
+        <a href="/tools/json/" class="card">
+          <span class="card__tag card__tag--dev">开发者</span>
+          <div class="card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 00-2 2v4a2 2 0 01-2 2 2 2 0 012 2v4a2 2 0 002 2h2"/><path d="M16 4h2a2 2 0 012 2v4a2 2 0 002 2 2 2 0 00-2 2v4a2 2 0 01-2 2h-2"/></svg>
+          </div>
+          <h3>JSON 格式化与排序</h3>
+          <p>美化缩进、压缩成单行、键名递归排序。语法错误指到具体行列，还告诉你错在哪。</p>
+        </a>
+
+
+        <div class="card card--soon card--soon--wide">
           <div class="card__icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".8" fill="currentColor" stroke="none"/></svg>
           </div>
           <h3>更多工具</h3>
-          <p>批量加水印、图片拼图、图片转 PDF 正在开发中。</p>
+          <p>批量加水印、图片拼图、图片转 PDF 正在开发中 —— 有想加的可以直接提。</p>
         </div>
 
       </div>
@@ -233,7 +260,7 @@
   "name": "PixKit",
   "applicationCategory": "MultimediaApplication",
   "operatingSystem": "Any",
-  "description": "免费在线图片压缩、证件照制作、格式转换工具，全部在浏览器本地处理，不上传服务器。",
+  "description": "免费在线图片压缩、证件照、格式转换，以及 JSON 格式化、时间戳转换、Base64 编解码等开发者工具，全部在浏览器本地处理，不上传服务器。",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" }
 }
 </script>

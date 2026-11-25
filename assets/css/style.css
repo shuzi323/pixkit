@@ -892,3 +892,327 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
 @media (max-width: 640px) {
   .langswitch { margin-left: auto; }
 }
+
+/* ============================================================
+   文本类工具（JSON / 时间戳 / Base64 解码）共用
+   ============================================================ */
+
+.txt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+
+.txt-grid--aside { grid-template-columns: minmax(0, 1fr) 330px; }
+
+@media (max-width: 900px) {
+  .txt-grid,
+  .txt-grid--aside { grid-template-columns: 1fr; }
+}
+
+/* ---------- 输入编辑器 ---------- */
+
+.editor {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.editor:focus-within {
+  border-color: #a5b4fc;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .1);
+}
+
+.editor__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.editor__bar .spacer { margin-left: auto; }
+
+.editor textarea {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+  border: 0;
+  outline: none;
+  resize: vertical;
+  padding: 14px;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  tab-size: 2;
+}
+
+.editor textarea::placeholder { color: #a9b4c4; }
+
+/* ---------- 深色代码输出 ---------- */
+
+.code-box {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+.code-box pre {
+  margin: 0;
+  padding: 16px;
+  max-height: 460px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.65;
+  color: #cbd5e1;
+  white-space: pre;
+}
+
+.code-box--wrap pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.code-box__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  font-size: 12px;
+  color: #94a3b8;
+  font-family: var(--mono);
+}
+
+.code-box__bar .spacer { margin-left: auto; }
+
+.copy-btn {
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+
+.copy-btn:hover { background: #1e293b; border-color: #475569; }
+.copy-btn.is-done { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+/* ---------- 分段标签 ---------- */
+
+.fmt-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.fmt-tab {
+  border: 1px solid var(--line-2);
+  background: #fff;
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+
+.fmt-tab:hover { border-color: #a5b4fc; }
+
+.fmt-tab.is-active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+/* ---------- 小按钮 ---------- */
+
+.mini-btn {
+  border: 1px solid var(--line-2);
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+}
+
+.mini-btn:hover { border-color: var(--brand); color: var(--brand); }
+.mini-btn.is-done { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+/* ---------- 键值结果表 ---------- */
+
+.kv {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.kv__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.kv__row:last-child { border-bottom: 0; }
+
+.kv__k {
+  flex: none;
+  width: 92px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.kv__v {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+/* ---------- 统计条 ---------- */
+
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.stat {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.stat strong {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------- 错误提示 ---------- */
+
+.err-box {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #9f1239;
+  margin-top: 12px;
+}
+
+.err-box .err-box__title {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.err-box code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: rgba(159, 18, 57, .08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.err-box .err-box__hint {
+  margin-top: 7px;
+  font-size: 12.5px;
+  color: #b91c1c;
+  opacity: .88;
+}
+
+/* ---------- 实时时钟 ---------- */
+
+.clock {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.clock__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+/* ---------- 预览棋盘格 ---------- */
+
+.checker {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: repeating-conic-gradient(#f1f5f9 0% 25%, #fff 0% 50%) 50% / 14px 14px;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 14px;
+}
+
+.checker img {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px -6px rgba(15, 23, 42, .3);
+}
+
+.card--soon--wide { grid-column: span 2; }
+
+@media (max-width: 520px) {
+  .card--soon--wide { grid-column: span 1; }
+}
+
+.stat-row--grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.stat-row--grid .stat {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

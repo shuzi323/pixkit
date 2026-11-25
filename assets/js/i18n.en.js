@@ -6,10 +6,15 @@
  */
 
 import { TOOLS } from './i18n.tools.js';
+import { TEXT } from './i18n.text.js';
 
 const UI = {
   /* ---------- 站点通用 ---------- */
-  "PixKit — 免费在线图片工具，本地处理不上传": "PixKit — Free online image tools, processed locally",
+  "PixKit — 免费在线图片与开发者工具，本地处理不上传": "PixKit — Free online image and developer tools, processed locally",
+  "免费在线图片压缩、证件照、格式转换，以及 JSON 格式化、时间戳转换、Base64 编解码等开发者工具。所有处理都在浏览器本地完成，文件不上传，无数量限制。":
+    "Free online tools for image compression, ID photos and format conversion, plus developer utilities: JSON formatting, timestamp conversion and Base64 encoding. Everything runs in your browser — no uploads, no limits.",
+  "图片压缩、证件照、格式转换，以及 JSON、时间戳、Base64 等开发者工具。全部在浏览器本地完成，不上传、不限量。":
+    "Image compression, ID photos and format conversion, plus JSON, timestamp and Base64 tools. All processed locally, no uploads, no limits.",
   "图片压缩": "Compress",
   "证件照": "ID Photo",
   "全部工具": "All tools",
@@ -276,4 +281,4 @@ export const RULES = [
   [/^Base64 后 (.+)$/, (m) => `${m[1]} as Base64`],
 ];
 
-export const EN = Object.assign({}, UI, TOOLS);
+export const EN = Object.assign({}, UI, TOOLS, TEXT);

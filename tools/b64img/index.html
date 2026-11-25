@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base64 转图片 — 在线解码还原成图片，本地处理 | PixKit</title>
+<meta name="description" content="免费在线 Base64 转图片工具。粘贴 Data URI 或纯 Base64 字符串，自动识别 PNG / JPG / GIF / WebP / SVG 格式并还原成图片下载。全程在浏览器本地解码，不上传。">
+<meta name="keywords" content="base64转图片,base64解码,data uri转图片,base64在线解密,base64 image decoder">
+<link rel="canonical" href="https://example.com/tools/b64img/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Base64 转图片 — 在线解码还原">
+<meta property="og:description" content="粘贴 Base64 自动识别格式并还原成图片，支持纯 Base64 与 Data URI，本地解码不上传。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M10 22V10h5.5a3.5 3.5 0 010 7H12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/assets/css/style.css">
+<script type="module" src="/assets/js/i18n.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="/" class="logo">
+      <span class="logo__mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+      </span>
+      PixKit
+    </a>
+    <nav class="nav">
+      <a href="/tools/compress/">图片压缩</a>
+      <a href="/tools/idphoto/">证件照</a>
+      <a href="/">全部工具</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="tool-head">
+      <div class="tool-head__crumb"><a href="/">首页</a> / Base64 转图片</div>
+      <h1>Base64 转图片</h1>
+      <p>把 Base64 字符串还原成真正的图片文件。粘贴 Data URI 或纯 Base64 都行，格式自动识别，解完直接下载。</p>
+    </div>
+
+    <div class="privacy-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>本地解码：字符串不会上传，适合处理内部系统导出的图片数据。</span>
+    </div>
+
+    <div class="txt-grid txt-grid--aside">
+      <div>
+        <div class="editor">
+          <div class="editor__bar">
+            <span>Base64 字符串</span>
+            <span class="spacer"></span>
+            <button class="mini-btn" id="sampleBtn" type="button">载入示例</button>
+            <button class="mini-btn" id="pasteBtn" type="button">粘贴</button>
+            <button class="mini-btn" id="clearBtn" type="button">清空</button>
+          </div>
+          <textarea id="input" spellcheck="false" autocomplete="off" placeholder="粘贴 data:image/png;base64,iVBORw0KGgo... 或者只有纯 Base64 内容"></textarea>
+        </div>
+
+        <div class="err-box hidden" id="err"></div>
+        <div class="stat-row" id="stats"></div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:0">
+          <div class="panel__title">解码结果</div>
+          <div class="empty" id="empty">粘贴 Base64 后，这里会显示图片</div>
+          <div class="hidden" id="out">
+            <div class="checker"><img id="thumb" alt="解码结果预览"></div>
+            <div class="stat-row stat-row--grid" id="meta" style="margin-bottom:12px"></div>
+            <button class="btn btn--primary btn--block" id="dlBtn" type="button">下载图片</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prose" style="padding: 44px 0 56px;">
+      <h2>Base64 转图片到底做了什么</h2>
+      <p>
+        Base64 是一串纯文本，本身不是图片。它内部装着图片的二进制字节，只是用 64 个可打印字符表示出来。
+        「解码」要做的就是把文本还原成字节，再交给浏览器还原成画面 —— 这一步不需要联网，也不需要服务器。
+      </p>
+      <p>
+        所以这个工具做的事情很简单：解析字符串 → 还原字节 → 推测格式 → 生成可下载的文件。
+        你看到的那张预览图和最后下载的文件，是同一份数据。
+      </p>
+
+      <h2>不写 <code>data:</code> 前缀也能识别</h2>
+      <p>
+        很多工具要求你必须粘贴完整的 <code>data:image/png;base64,...</code>，少一段就报错。
+        这里换了个办法：直接读字节头部的「魔数」（magic number），也就是每种图片格式固定的开头几个字节。
+      </p>
+      <div class="note">
+        <strong>常见格式的魔数：</strong> PNG 是 <code>89 50 4E 47</code>，JPEG 是 <code>FF D8 FF</code>，
+        GIF 是 <code>47 49 46</code>，WebP 是 <code>RIFF....WEBP</code>，BMP 是 <code>42 4D</code>，
+        SVG 则是文本形式的 <code>&lt;svg</code> 开头。
+      </div>
+      <p>
+        这样做的好处是两个：一是纯 Base64 字符串能直接用，二是当有人把 PNG 的数据错标成 <code>image/jpeg</code> 时，
+        你拿到的仍然是正确的 <code>.png</code> 文件，而不是一个改错扩展名、某些软件打不开的文件。
+      </p>
+
+      <h2>为什么有时候解不出来</h2>
+      <ul>
+        <li><strong>字符串被截断了</strong>：Base64 的长度必须是 4 的倍数，少几个字符就解不出来。常见于从聊天窗口复制长文本时被折叠。</li>
+        <li><strong>混进了别的字符</strong>：换行和空格会自动忽略，但引号、HTML 标签、Markdown 包裹符号不会 —— 粘贴前记得去掉。</li>
+        <li><strong>本来就是加密过的内容</strong>：Base64 是编码不是加密，但它经常被用来包一层加密后的数据。那种数据解出来是乱码，不是图片。</li>
+      </ul>
+
+      <h2>常见问题</h2>
+      <div class="faq">
+        <details>
+          <summary>支持多大的图片</summary>
+          <div class="faq__body"><p>浏览器内存允许就能解，实测几十 MB 的 Base64 也能处理。不过文本越大，输入框响应越慢，超过 5MB 的字符串建议直接用代码处理。</p></div>
+        </details>
+        <details>
+          <summary>能把图片转回 Base64 吗</summary>
+          <div class="faq__body"><p>可以，用同站的<a href="/tools/base64/">图片转 Base64</a>：上传图片，生成 Data URI、CSS、HTML 或 Markdown 格式的引用。两个工具用的是同一套编码规则。</p></div>
+        </details>
+        <details>
+          <summary>下载的文件名是什么</summary>
+          <div class="faq__body"><p>统一叫 <code>base64-image.png</code>（扩展名按实际格式变）。Base64 数据里不包含文件名信息，所以没法还原成原始名字。</p></div>
+        </details>
+        <details>
+          <summary>SVG 也能解吗</summary>
+          <div class="faq__body"><p>能。SVG 的 Data URI 有两种写法：<code>;base64,</code> 编码的，和直接内联 XML 的（URL 编码）。两种都能识别，解出来是 <code>.svg</code> 文件。</p></div>
+        </details>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <div>
+      <div class="logo" style="margin-bottom:8px">
+        <span class="logo__mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+        </span>
+        PixKit
+      </div>
+      <div>所有处理在你的浏览器本地完成。</div>
+    </div>
+    <div class="footer__links">
+      <a href="/">全部工具</a>
+      <a href="/tools/base64/">图片转 Base64</a>
+      <a href="/tools/json/">JSON 格式化</a>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/assets/js/b64img.js"></script>
+</body>
+</html>

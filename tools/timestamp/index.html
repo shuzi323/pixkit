@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>时间戳转换 — Unix 时间戳与日期互转，本地计算 | PixKit</title>
+<meta name="description" content="免费在线 Unix 时间戳转换工具。秒 / 毫秒 / 微秒自动识别，时间戳转日期、日期转时间戳，同时显示本地时间、UTC、ISO 8601 和相对时间。纯浏览器计算。">
+<meta name="keywords" content="时间戳转换,unix时间戳,时间戳转日期,日期转时间戳,毫秒时间戳,timestamp转换">
+<link rel="canonical" href="https://example.com/tools/timestamp/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="时间戳转换 — Unix 时间戳与日期互转">
+<meta property="og:description" content="秒/毫秒自动识别，同时给出本地时间、UTC、ISO 8601 和相对时间。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M10 22V10h5.5a3.5 3.5 0 010 7H12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+<link rel="stylesheet" href="/assets/css/style.css">
+<style>
+  .ts-now {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px 40px;
+    align-items: flex-end;
+  }
+
+  .ts-now__block { min-width: 0; }
+
+  .kv__copy { flex: none; }
+
+  .ts-input {
+    width: 100%;
+    border: 1px solid var(--line-2);
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    background: #fff;
+  }
+
+  .ts-input:focus {
+    border-color: #a5b4fc;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, .1);
+  }
+
+  .ts-quick {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+</style>
+<script type="module" src="/assets/js/i18n.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar__inner">
+    <a href="/" class="logo">
+      <span class="logo__mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+      </span>
+      PixKit
+    </a>
+    <nav class="nav">
+      <a href="/tools/compress/">图片压缩</a>
+      <a href="/tools/idphoto/">证件照</a>
+      <a href="/">全部工具</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="tool-head">
+      <div class="tool-head__crumb"><a href="/">首页</a> / 时间戳转换</div>
+      <h1>时间戳转换</h1>
+      <p>Unix 时间戳和日期时间互转。默认按位数自动识别秒 / 毫秒 / 微秒，也可以手动锁定单位。一次给出本地时间、UTC、ISO 8601 和相对时间。</p>
+    </div>
+
+    <div class="privacy-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>本地计算：换算用的是你系统自带的时区数据，不经过任何服务器。</span>
+    </div>
+
+    <div class="panel">
+      <div class="panel__title">当前时间</div>
+      <div class="ts-now">
+        <div class="ts-now__block">
+          <div class="clock__label">本地时间 <span id="tzLabel"></span></div>
+          <div class="clock" id="nowClock">--:--:--</div>
+          <div style="font-size:12.5px;color:var(--ink-3);margin-top:4px" id="nowDate">—</div>
+        </div>
+        <div class="ts-now__block" style="flex:1">
+          <div class="clock__label">当前时间戳</div>
+          <div class="kv" id="nowKv">
+            <div class="kv__row">
+              <span class="kv__k">秒级</span>
+              <span class="kv__v" id="nowSec">—</span>
+              <button class="mini-btn kv__copy" data-copy="nowSec" type="button">复制</button>
+            </div>
+            <div class="kv__row">
+              <span class="kv__k">毫秒级</span>
+              <span class="kv__v" id="nowMs">—</span>
+              <button class="mini-btn kv__copy" data-copy="nowMs" type="button">复制</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="txt-grid">
+      <div class="panel" style="margin-bottom:0">
+        <div class="panel__title">时间戳 → 日期时间</div>
+        <input class="ts-input" id="tsIn" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="1764062400 或 1764062400000">
+        <div style="margin-top:12px">
+          <div class="clock__label" style="margin-bottom:8px">单位</div>
+          <div class="fmt-tabs" id="unitTabs" style="margin-bottom:0">
+            <button class="fmt-tab is-active" data-unit="auto" type="button">自动识别</button>
+            <button class="fmt-tab" data-unit="s" type="button">秒</button>
+            <button class="fmt-tab" data-unit="ms" type="button">毫秒</button>
+          </div>
+        </div>
+        <div class="ts-quick">
+          <button class="mini-btn" data-ts="now" type="button">现在</button>
+          <button class="mini-btn" data-ts="today" type="button">今天 0 点</button>
+          <button class="mini-btn" data-ts="yesterday" type="button">昨天 0 点</button>
+          <button class="mini-btn" data-ts="clear" type="button">清空</button>
+        </div>
+        <div class="err-box hidden" id="tsErr"></div>
+        <div class="kv" id="tsKv" style="margin-top:14px"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0">
+        <div class="panel__title">日期时间 → 时间戳</div>
+        <input class="ts-input" id="dateIn" type="datetime-local" step="1">
+        <div class="ts-quick">
+          <button class="mini-btn" data-date="now" type="button">现在</button>
+          <button class="mini-btn" data-date="today" type="button">今天 0 点</button>
+          <button class="mini-btn" data-date="tomorrow" type="button">明天 0 点</button>
+        </div>
+        <div class="kv" id="dateKv" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <div class="prose" style="padding: 44px 0 56px;">
+      <h2>时间戳是什么</h2>
+      <p>
+        Unix 时间戳是「从 1970 年 1 月 1 日 00:00:00 UTC 起，过去了多少秒」。它是一个绝对的时间点，
+        不带时区信息 —— 所以同一个时间戳，在北京显示为下午 5 点，在伦敦显示为上午 9 点，值的本身没有变。
+      </p>
+      <p>
+        这也是为什么接口之间传时间都用时间戳：字符串 <code>"2026-11-25 17:18:00"</code> 少了时区就没法确定指哪一刻，
+        而 <code>1764062400</code> 在世界任何地方都指同一瞬间。
+      </p>
+
+      <h2>秒、毫秒、微秒怎么区分</h2>
+      <p>
+        这个工具按位数自动判断，判断规则和主流系统一致：
+      </p>
+      <ul>
+        <li><strong>≤ 11 位</strong> → 秒。现在的时间戳是 10 位，11 位要到 2286 年以后才会出现。</li>
+        <li><strong>12–14 位</strong> → 毫秒。JavaScript 的 <code>Date.now()</code>、Java 的 <code>System.currentTimeMillis()</code> 都是这个。</li>
+        <li><strong>15 位以上</strong> → 微秒。Go 的 <code>UnixMicro()</code>、部分数据库的时间精度会给出这个。</li>
+      </ul>
+      <p>
+        自动判断不是万能的。如果一个值只有 10 位，但它其实是「毫秒」（有些系统从某个纪元点开始计时，
+        或者只是被截断过），按秒来解会差出几十年。输入框下面有单位切换 ——
+        选「秒」或「毫秒」之后就不再按位数猜，完全按你指定的来。
+      </p>
+      <div class="note">
+        <strong>踩坑提醒：</strong> 单位搞错会让年份差出几十年。把 13 位毫秒当成秒来解，会得到公元 57000 多年 ——
+        如果你看到这种离谱的年份，先检查位数。
+      </div>
+
+      <h2>时区是怎么处理的</h2>
+      <p>
+        页面显示的「本地时间」用的是你操作系统里的时区设置，转换全在浏览器里完成，没有任何网络请求。
+        换台电脑、换个城市，同一时间戳显示出的本地时间会跟着变，但 UTC 那一行永远不变。
+      </p>
+      <p>
+        如果你要提交给后端，建议直接用 <strong>ISO 8601</strong> 那一行的值（<code>2026-11-25T09:18:00.000Z</code>），
+        它带 <code>Z</code> 后缀，明确表示是 UTC，不会有歧义。
+      </p>
+
+      <h2>常见问题</h2>
+      <div class="faq">
+        <details>
+          <summary>为什么显示的时间和我预期差了几个小时</summary>
+          <div class="faq__body"><p>大概率是时区问题。时间戳本身不含时区，展示时才套上本地时区。看「UTC」那一行做对照 —— 如果你期望的是 UTC 时间，用那一行就不会有偏差。</p></div>
+        </details>
+        <details>
+          <summary>2038 年之后还能用吗</summary>
+          <div class="faq__body"><p>能。2038 问题出在用 32 位有符号整数存秒的旧系统上，浏览器用的是 64 位双精度浮点，能表示到公元 27 万年左右，日常使用不会遇到上限。</p></div>
+        </details>
+        <details>
+          <summary>负数时间戳是什么</summary>
+          <div class="faq__body"><p>1970 年之前的时间。比如 <code>-86400</code> 是 1969 年 12 月 31 日。这个工具支持负数，直接输入即可。</p></div>
+        </details>
+        <details>
+          <summary>能批量转换吗</summary>
+          <div class="faq__body"><p>这个页面是单条换算。如果有一整列要转，用 Excel 公式更快：秒级时间戳 <code>=A1/86400+25569</code> 然后设成日期格式；反过来用 <code>=(B1-25569)*86400</code>。</p></div>
+        </details>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <div>
+      <div class="logo" style="margin-bottom:8px">
+        <span class="logo__mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>
+        </span>
+        PixKit
+      </div>
+      <div>所有处理在你的浏览器本地完成。</div>
+    </div>
+    <div class="footer__links">
+      <a href="/">全部工具</a>
+      <a href="/tools/json/">JSON 格式化</a>
+      <a href="/tools/b64img/">Base64 转图片</a>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/assets/js/timestamp.js"></script>
+</body>
+</html>
