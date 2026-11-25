@@ -101,91 +101,48 @@ server {
 
 所以判断标准很简单：**先上线验证就选 Pages（免费、5 分钟搞定）；如果后面确认流量主要来自国内且在乎体验，再迁回自己的服务器**。纯静态站迁移成本几乎为零。
 
-> **已经用拖拽上传建好项目了？** 直接看 **方式 B**。Cloudflare 不允许给这类项目补 Git 集成，得用 GitHub Actions 推到同一个项目 —— 域名和 `pages.dev` 都不用动。
+> 现在走的是 **方式 B**（Cloudflare 直接拉 GitHub 仓库构建）。方式 A 留作应急：线上出问题、需要临时发一版时用。
 
-#### 方式 A：拖拽上传（最快，不用 Git）
+#### 方式 A：手动上传（应急用）
 
 ```bash
 npm run dist          # 生成干净的 dist/ 目录（19 个文件，约 172 KB）
 ```
 
-然后：
-
-1. 登录 [dash.cloudflare.com](https://dash.cloudflare.com)
-2. 左侧 **Workers & Pages** → **Create** → **Pages** → **Upload assets**
-3. 项目名填 `pixkit`（这会决定你的 `pixkit.pages.dev`）
-4. 把 `dist` 文件夹整个拖进去 → **Deploy site**
+然后 Dashboard → **Workers & Pages** → 进项目 → **Create deployment** → 把 `dist` 文件夹拖进去。
 
 > 一定要拖 `dist` 而不是项目根目录。根目录里有 `node_modules`（几十 MB）和 `tests`，传上去纯属浪费，还可能超出单站 2 万个文件的限制。
 
-#### 方式 B：GitHub Actions 推送到「已有项目」（推荐，Direct Upload 项目只能走这条）
+#### 方式 B：Git 集成（当前方案）
 
-**先说要命的一点：Cloudflare 不允许给 Direct Upload 项目补 Git 集成。**
+Cloudflare 拉 GitHub 仓库 → 自己跑构建 → 自动上线。push 一次更新一次，不用本地打包。
 
-官方文档写的是两条互斥规则 —— Git 项目不能改成拖拽上传，拖拽上传的项目也不能事后接 Git。
-所以「让 GitHub 的 push 直接落到那个已经存在的项目里」，只有一条路：
-**用 GitHub Actions 跑 wrangler，上传到同一个项目名**。
+配置项：
 
-好处是复用现有项目：`xxx.pages.dev` 和已绑的域名全都不动，DNS 也不用改。
-
-`.github/workflows/deploy.yml` 已经写好了，你要配三个值。
-
-**1. 确认项目名**
-
-Dashboard → Workers & Pages → 点进你的项目，标题下方就是项目名。或者：
-
-```bash
-npx wrangler login
-npx wrangler pages project list
-```
-
-如果名字不是 `pixkit`，改 `deploy.yml` 里这行（或者不改文件，在仓库 Settings → Variables 里加 `CLOUDFLARE_PAGES_PROJECT`，前者优先级更高）：
-
-```yaml
-PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'pixkit' }}
-```
-
-**2. 建 API Token**
-
-Cloudflare 右上角头像 → **My Profile** → **API Tokens** → **Create Token** → **Custom token**：
-
-- Permissions：`Account` → `Cloudflare Pages` → `Edit`
-- Account Resources：选你自己那个账号
-
-不要用 Global API Key —— 那是账号级万能钥匙，泄露等于账号被接管。
-
-**3. 加两个 GitHub Secret**
-
-仓库 → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**：
-
-| Name | Value |
+| 项 | 值 |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | 上一步生成的 token |
-| `CLOUDFLARE_ACCOUNT_ID` | 域名概览页右侧栏的 Account ID，或 `npx wrangler whoami` 输出里那串 |
+| Production branch | `main` |
+| Framework preset | `None` |
+| Build command | `node scripts/build-dist.mjs` |
+| Build output directory | `dist` |
+| 环境变量（建议） | `NODE_VERSION=22` |
 
-配完 push 一次，Actions 里就能看到 `test` → `deploy` 两个 job 依次跑。之后每次 push 到 `main` 自动上线，**测试挂了就不会部署**。
+**Build command 必须填。** 这个站「零构建」说的是运行时没有打包步骤，但 `dist/` 是 `npm run dist` 从仓库里筛出来的干净子集 —— 没有 `tests/`、`scripts/`、`package.json`。不填的话 Cloudflare 会把仓库根目录整个发出去，`tests/` 和 `scripts/` 都会变成公开可访问的 URL。
 
-几个细节：
+`scripts/build-dist.mjs` 用 `import.meta.url` 反推项目根目录，不是写死的绝对路径。这点很关键：上一版写死了 `E:/code/ai/forFun`，在 Cloudflare 的 Linux 构建机上必然 `ENOENT`。
 
-- 走的是「直接上传」，所以 `_headers`、`404.html` 必须在 `dist/` 里 —— `npm run dist` 已经处理好了
-- 项目名写错时 wrangler 会直接报项目不存在，**不会**自动新建（CI 里没有交互），正好防止手滑多出一个项目
-- Pages 会保留历史部署，在后台可以一键回滚到任意一次
-- API Token 有效期建议设 1 年，到期提前换，换的时候只改 GitHub Secret，不用动代码
+构建流程上的几个要点：
 
-#### 方式 C：新建一个 Git 集成项目（想用 Cloudflare 原生流程）
+- Cloudflare 检测到 `package.json` 会先自动跑 `npm install`。`puppeteer-core` 只在测试里用，不下载 Chromium，装起来很快；想再省几秒可以加环境变量 `NPM_FLAGS=--omit=dev`
+- `dist/` 在 `.gitignore` 里，正常 —— 每次构建现生成
+- `_headers`、`404.html`、`robots.txt`、`sitemap.xml` 都随 `dist` 发布，Pages 会正确识别
+- 非 `main` 分支和 PR 会生成独立的预览部署，不动正式站
+- 免费额度 500 次构建/月、单日 100 次
+- 构建失败时 Pages 会继续用上一次成功的版本对外服务，站点不会挂。日志在 **Deployments → 点进那次构建**
 
-如果你更想要「push 完什么都不用管、预览部署也由 Cloudflare 管」，那就得新建项目，再把域名搬过去：
+> 之前用拖拽上传建的那个项目还在。如果域名绑在它身上，记得去新项目的 **Custom domains** 里绑同一个域名（旧项目那边先 Remove），确认新站正常后再删旧项目 —— 否则以后自己都分不清是哪个在服务。
 
-1. Pages → **Create** → **Connect to Git** → 选 `shuzi323/pixkit`
-2. 项目名换一个，比如 `pixkit-git`（不能和现有项目重名）
-3. Framework preset `None`，Build command `node scripts/build-dist.mjs`，Output `dist`
-4. 等 `pixkit-git.pages.dev` 能正常打开后，去**旧项目**的 Custom domains 里把域名 **Remove**
-5. 到**新项目**的 Custom domains 里添加同一个域名
-6. 确认新站正常，再删掉旧项目
-
-顺序别搞反：**先在新项目验证能跑，再挪域名**。反过来会有一段时间域名指向空白页。域名如果本来就托管在 Cloudflare，挪动时 DNS 记录会自动改指向，不用手改，但要等几分钟生效。
-
-#### 方式 D：命令行手动部署
+#### 方式 C：命令行手动部署
 
 ```bash
 npm i -D wrangler
@@ -193,7 +150,7 @@ npx wrangler login
 npm run deploy        # 等价于 build-dist + wrangler pages deploy dist --project-name=pixkit
 ```
 
-适合临时发一版、不想等 CI 的时候。
+适合改完想立刻看线上效果、不想等 Cloudflare 构建的时候。
 
 #### 绑定自己的域名
 
