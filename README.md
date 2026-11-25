@@ -281,6 +281,15 @@ Dashboard → **Workers & Pages** → **Create** → **Import a repository**，�
 - `_headers`、`404.html`、`robots.txt`、`sitemap.xml` 都随 `dist` 发布，Workers 静态资源同样识别 `_headers`
 - 构建失败时会继续用上一次成功的版本对外服务，站点不会挂
 
+#### 构建报错对照
+
+| 报错 | 原因 | 修法 |
+|---|---|---|
+| `The directory specified by the "assets.directory" field ... does not exist: /opt/buildhome/repo/dist` | **Build command 是空的**，Cloudflare 装完依赖直接跑 `wrangler deploy`，`dist/` 从没被生成 | Settings → Build → Build command 填 `node scripts/build-dist.mjs`，然后 Retry deployment |
+| 构建成功但线上还是整个仓库的内容 | 同上，或 deploy command 不是 `npx wrangler deploy` | 同上，deploy command 必须是 `npx wrangler deploy`（不要写成 `wrangler pages deploy`） |
+
+`dist/` 在 `.gitignore` 里，所以云端仓库里**永远没有**这个目录 —— 它只能由构建命令现场生成。这条是 Workers Builds 和「本地手动 `npm run deploy`」最大的区别：本地那条命令自带 `npm run dist`，云端不会。
+
 #### 方式 B：命令行手动部署（应急用）
 
 ```bash
