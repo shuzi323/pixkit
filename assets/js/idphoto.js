@@ -3,6 +3,7 @@
    ============================================================ */
 
 import { toast, download, decodeImage } from './common.js';
+import { getLang } from './i18n.js';
 
 const DPI = 300;
 const mm2px = mm => Math.round((mm * DPI) / 25.4);
@@ -12,12 +13,12 @@ const SHEET = { w: mm2px(152), h: mm2px(102) };
 const GAP = mm2px(3);
 
 const SPECS = [
-  { id: 'one',    name: '一寸',   w: 25, h: 35, note: '简历 / 报名' },
-  { id: 'two',    name: '二寸',   w: 35, h: 49, note: '毕业证 / 职称' },
-  { id: 'small1', name: '小一寸', w: 22, h: 32, note: '驾驶证' },
-  { id: 'big1',   name: '大一寸', w: 33, h: 48, note: '护照 / 港澳' },
-  { id: 'small2', name: '小二寸', w: 35, h: 45, note: '部分签证' },
-  { id: 'visa',   name: '美签',   w: 51, h: 51, note: '美国签证' },
+  { id: 'one',    name: '一寸',   en: '1-inch',   w: 25, h: 35, note: '简历 / 报名' },
+  { id: 'two',    name: '二寸',   en: '2-inch',   w: 35, h: 49, note: '毕业证 / 职称' },
+  { id: 'small1', name: '小一寸', en: 'small-1-inch', w: 22, h: 32, note: '驾驶证' },
+  { id: 'big1',   name: '大一寸', en: 'large-1-inch', w: 33, h: 48, note: '护照 / 港澳' },
+  { id: 'small2', name: '小二寸', en: 'small-2-inch', w: 35, h: 45, note: '部分签证' },
+  { id: 'visa',   name: '美签',   en: 'US-visa',   w: 51, h: 51, note: '美国签证' },
 ];
 
 const $ = id => document.getElementById(id);
@@ -283,7 +284,7 @@ async function downloadSingle() {
   paintTo(c.getContext('2d'), w, h, state.spec);
 
   const blob = await toBlob(c);
-  download(blob, `证件照_${state.spec.name}_${w}x${h}.jpg`);
+  download(blob, `${getLang() === 'en' ? 'ID-photo' : '证件照'}_${(getLang() === 'en' ? state.spec.en : state.spec.name)}_${w}x${h}.jpg`);
   toast('已下载电子版');
 }
 
@@ -324,7 +325,7 @@ async function downloadSheet() {
   }
 
   const blob = await toBlob(sheet, 0.96);
-  download(blob, `证件照排版_${state.spec.name}_${cols * rows}张_6寸.jpg`);
+  download(blob, `${getLang() === 'en' ? 'ID-photo-sheet' : '证件照排版'}_${(getLang() === 'en' ? state.spec.en : state.spec.name)}_${cols * rows}${getLang() === 'en' ? '-on-6inch' : '张_6寸'}.jpg`);
   toast(`已生成 ${cols * rows} 张排版（${cols}×${rows}）`);
 }
 

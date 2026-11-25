@@ -75,8 +75,8 @@ function renderMeta() {
     : '';
 
   meta.innerHTML = `
-    ${dim}原始 ${formatBytes(state.fileSize)}<br>
-    Base64 后 ${(uriLen / 1024).toFixed(1)} KB
+    ${dim}<span>原始 ${formatBytes(state.fileSize)}</span><br>
+    <span>Base64 后 ${(uriLen / 1024).toFixed(1)} KB</span>
     <span class="grow">+${Math.round(grow)}%</span>
   `;
 }

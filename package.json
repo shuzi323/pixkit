@@ -8,10 +8,11 @@
     "dev": "python -m http.server 8899",
     "dist": "node scripts/build-dist.mjs",
     "deploy": "npm run dist && npx wrangler pages deploy dist --project-name=pixkit",
-    "test": "node tests/e2e-compress.mjs && node tests/e2e-idphoto.mjs && node tests/e2e-devtools.mjs",
+    "test": "node tests/e2e-compress.mjs && node tests/e2e-idphoto.mjs && node tests/e2e-devtools.mjs && node tests/e2e-i18n.mjs && node tests/e2e-i18n-runtime.mjs",
     "test:compress": "node tests/e2e-compress.mjs",
     "test:idphoto": "node tests/e2e-idphoto.mjs",
-    "test:dev": "node tests/e2e-devtools.mjs"
+    "test:dev": "node tests/e2e-devtools.mjs",
+    "test:i18n": "node tests/e2e-i18n.mjs && node tests/e2e-i18n-runtime.mjs"
   },
   "keywords": [
     "image-compression",

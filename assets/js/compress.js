@@ -6,6 +6,7 @@ import {
   formatBytes, toast, download, esc, baseName, extName, uniqueName,
   ZipWriter, decodeImage, makeCanvas, canvasToBlob, canEncode
 } from './common.js';
+import { t } from './i18n.js';
 
 /* ---------------- 元素 ---------------- */
 
@@ -347,7 +348,9 @@ function updateSummary() {
   const pending = state.items.filter(i => i.status === 'pending').length;
 
   if (!done.length) {
-    summary.innerHTML = `共 ${state.items.length} 张${working || pending ? ' · 处理中…' : ''}`;
+    summary.innerHTML = (working || pending)
+      ? t('共 {n} 张 · 处理中…', { n: state.items.length })
+      : t('共 {n} 张', { n: state.items.length });
     zipBtn.disabled = true;
     return;
   }
@@ -357,14 +360,24 @@ function updateSummary() {
   const savedPct = before > 0 ? Math.round(((before - after) / before) * 100) : 0;
 
   const busy = working || pending;
-  summary.innerHTML = `
-    已处理 <strong>${done.length}</strong> / ${state.items.length} 张 ·
-    ${formatBytes(before)} → <strong>${formatBytes(after)}</strong>
-    <span class="save">节省 ${savedPct}%</span>
-    ${busy ? ' · <span class="spinner"></span>' : ''}
-  `;
+  summary.innerHTML = t(
+    '已处理 <strong>{d}</strong> / {n} 张 · {b} → <strong>{a}</strong> <span class="save">节省 {p}%</span>',
+    {
+      d: done.length,
+      n: state.items.length,
+      b: formatBytes(before),
+      a: formatBytes(after),
+      p: savedPct,
+    }
+  ) + (busy ? ' · <span class="spinner"></span>' : '');
   zipBtn.disabled = !!busy || !done.length;
 }
+
+// t() 渲染出来的文案是「当前语言」的产物，不归 i18n 的 WeakMap 管，
+// 所以切换语言时得自己重渲染一次，否则会停在旧语言上。
+window.addEventListener('pixkit:langchange', () => {
+  if (state.items.length) updateSummary();
+});
 
 /* ---------------- 打包下载 ---------------- */
 

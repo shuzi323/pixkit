@@ -9,6 +9,8 @@ const browser = await puppeteer.launch(LAUNCH);
 
 try {
   const page = await browser.newPage();
+  // 固定中文，避免断言被语言自动判定影响
+  await page.evaluateOnNewDocument(() => { try { localStorage.setItem('pixkit.lang', 'zh'); } catch {} });
   await page.setViewport({ width: 1280, height: 1100, deviceScaleFactor: 1 });
 
   const errors = [];
