@@ -24,24 +24,31 @@
 - **手写 ZIP 打包**：`assets/js/common.js` 里 100 行实现的 store 模式 ZIP，不引入 JSZip
 - **架构即隐私**：服务器上没有接收图片的接口，用户想验证也验证不出东西来
 - **中英双语**：中文是唯一源码，英文运行时替换，切换不刷新、选择会记住
+- **能装到桌面、断网可用**：manifest + Service Worker，装上之后连网络都不需要
 - **文本工具无依赖**：JSON / 时间戳 / Base64 解码全部手写，连格式化库都没引
 
 ### 文件结构
 
 ```
 /
-├── index.html                    首页
+├── index.html                    首页（带工具搜索与分类筛选）
 ├── 404.html                      错误页（需在 nginx 里配置）
+├── manifest.webmanifest          PWA 清单
+├── sw.js                         Service Worker（离线缓存策略）
 ├── robots.txt
 ├── sitemap.xml
 ├── assets/
 │   ├── css/style.css             全站样式
+│   ├── icons/                    PWA 图标（192 / 512 / 512-maskable / 180）
 │   └── js/
 │       ├── common.js             ZIP 打包 / 图片解码 / 格式检测 / 剪贴板
 │       ├── i18n.js               语言判定、DOM 翻译、切换器
 │       ├── i18n.en.js            英文词典（站点 UI + 动态文案规则）
 │       ├── i18n.tools.js         英文词典（四个图片工具页 + EXIF 字段名）
 │       ├── i18n.text.js          英文词典（三个文本工具页）
+│       ├── pwa.js                Service Worker 注册 + 安装引导
+│       ├── home.js               首页搜索与分类筛选
+│       ├── compare.js            压缩前后对比（可拖动分割线）
 │       ├── compress.js           压缩引擎（convert / resize 也复用这个）
 │       ├── idphoto.js            证件照
 │       ├── base64.js             图片转 Base64
@@ -108,6 +115,63 @@ npm run test:i18n
 
 三个词典文件（`i18n.en.js` / `i18n.tools.js` / `i18n.text.js`）合计约 35KB（gzip），由 `i18n.js` 静态 import —— 中文访客也要下载。换来的是零闪烁：语言在首屏渲染前就定了，不会先闪一下中文再变英文。如果以后英文流量很低、又在意首屏，可以改成 `lang === 'en'` 时动态 `import()`，代价是英文访客会看到一瞬中文。
 
+
+## 离线可用（PWA）
+
+这个站跟 PWA 是天然契合的：**所有计算本来就在本地，唯一需要网络的是「把代码下载下来」这一步。** 装上之后，压缩、转格式、做证件照、格式化 JSON 全都不需要联网 —— 不是"降级体验"，功能一个不少。
+
+### 用户怎么用上
+
+| 场景 | 表现 |
+|---|---|
+| Chrome / Edge / Android | 右下角出现「安装到桌面」胶囊，点一下装成独立窗口应用 |
+| iOS Safari | 同一位置出现按钮，点开是手动指引（Safari 不支持自动安装事件）|
+| 点过胶囊上的「×」 | 记进 `localStorage['pixkit.installDismissed']`，之后不再打扰 |
+| 什么都不做 | 普通浏览器里照样用，只是没有离线能力 |
+
+### 缓存策略
+
+| 请求类型 | 策略 | 原因 |
+|---|---|---|
+| 页面导航 | network-first + 3 秒超时回退缓存 | 在线时永远是最新版，弱网或断网才用缓存 |
+| 静态资源（JS / CSS / 图） | stale-while-revalidate | 先给缓存秒开，后台再取新版 |
+| 预缓存 | install 时主动拉 CSS + 核心 JS | 保证「刚装完就断网」也能打开 |
+
+**页面导航故意不用 cache-first。** 工具站改版频繁，HTML 一旦缓存优先，用户会长期看到旧版，而且没有任何手段能通知他刷新。
+
+离线打开一个从没访问过的页面时，SW 返回一个自制的提示页（说明还没缓存、给个回首页的链接），而不是让浏览器弹「网络连接已断开」。
+
+### 改缓存策略时
+
+`sw.js` 顶部有 `const VERSION = 'v1'`，**改策略就 +1**，旧缓存在 `activate` 时会被清掉：
+
+```js
+const VERSION = 'v2';
+```
+
+只改 HTML / JS 不用动它 —— `sw.js` 自己的字节变了，浏览器就会装新版 SW，页面缓存保留。
+
+### 两个必须知道的坑
+
+1. **`sw.js` 绝对不能被缓存。** `_headers` 里已经写了 `no-store`。哪天换回 nginx 部署，记得加：
+   ```nginx
+   location = /sw.js {
+       add_header Cache-Control "no-cache, no-store, must-revalidate";
+   }
+   ```
+   否则 SW 自己被缓存住，用户永远拿不到新策略，线上改什么都「不生效」。
+
+2. **本地必须走 https 或 localhost。** 用 `http://192.168.x.x:8899` 打开时 SW 不注册 —— 浏览器规定，不是 bug。
+
+### 图标
+
+`assets/icons/` 下四个文件由 `scripts/make-icons.mjs` 用本机 Chrome 渲染 SVG 再截图生成，不引图像库：
+
+```bash
+npm run icons
+```
+
+改了品牌色或 logo 就重跑一次。`192` / `512` 是普通图标，`512-maskable` 的图形缩在中心安全区内（Android 会按圆形、方圆形等各种形状裁切），`180` 给 iOS 用，必须是满幅不透明。
 
 ## 本地预览
 
@@ -231,6 +295,7 @@ npm run deploy        # 等价于 build-dist + wrangler pages deploy dist --proj
 
 - HTML 不缓存（改了内容用户立刻能看到）
 - `/assets/*` 缓存 1 天（文件名没有 hash，不能设更长）
+- `/sw.js` 用 `no-store`、`/manifest.webmanifest` 用 1 小时 —— 规则要写在 `/*` 前面，Cloudflare 按从上到下的顺序匹配
 - 加了 `X-Content-Type-Options`、`Referrer-Policy` 等基础安全头
 
 没有配 CSP —— 页面里用了内联样式和 `data:` URI 图标，CSP 配不好会直接把站点搞坏，收益不大。
@@ -241,21 +306,30 @@ Vercel、Netlify 也都能拖 `dist` 上去，配置方式和 Pages 类似。国
 
 ## ⚠️ 上线前必做
 
-1. **替换域名**：全局搜索 `example.com`，换成你的域名。涉及每个页面的 `canonical`、`og:url`、`robots.txt`、`sitemap.xml`。
+1. **确认域名**：站内 `canonical`、`og:url`、`robots.txt`、`sitemap.xml` 现在统一指向 `https://pixkit.pages.dev`（13 个文件、23 处）。以后换域名时全局搜一遍：
 
    ```bash
-   grep -rl "example.com" . --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=tests
+   grep -rl "pixkit.pages.dev" . --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=tests
    ```
 
    改完记得重新 `npm run dist`，`dist/` 是生成物，不要直接改。
 
-   注意：如果你用 Cloudflare Pages 并绑定了自定义域名，这里要填**自定义域名**而不是 `pixkit.pages.dev`，否则搜索引擎会把权重记到 pages.dev 上。
+   注意：一旦绑定了自定义域名，这里要改成**自定义域名**而不是 `pixkit.pages.dev`，否则搜索引擎会把权重记到 pages.dev 上。
 
 2. **备案**：服务器在国内必须备案，否则 80/443 端口会被拦截。Cloudflare Pages、Vercel 这类境外托管不需要备案 —— 但反过来说，它们也无法享受国内节点的加速。
 
 3. **HTTPS**：浏览器要求，且 AdSense 也要求。用 certbot 申请免费证书。
 
 4. **提交 sitemap**：在百度搜索资源平台、Google Search Console 里提交 `sitemap.xml`，然后手动提交几个核心页面的 URL 加速收录。
+
+5. **验证 SW 不被缓存**（PWA 最容易出问题的点）：
+
+   ```bash
+   curl -I https://pixkit.pages.dev/sw.js | grep -i cache-control
+   # 期望：no-cache, no-store, must-revalidate
+   ```
+
+   拿到别的值就说明 `_headers` 没生效 —— 那样线上改动会推不下去，用户永远停在旧版本。顺便用 Lighthouse 跑一遍，Application 面板里 SW 和 manifest 都应该是绿的。
 
 ## 怎么赚钱 — 现实版
 
@@ -319,14 +393,18 @@ Vercel、Netlify 也都能拖 `dist` 上去，配置方式和 Pages 类似。国
 
 ```bash
 npm install                    # 只装 puppeteer-core，用于端到端测试
-npm test                       # 跑全部测试（功能 + 中英切换）
+npm test                       # 跑全部测试（功能 + 中英切换 + 离线）
 npm run test:compress          # 只测压缩
 npm run test:idphoto           # 只测证件照
 npm run test:i18n              # 只测中英切换，含全站漏译扫描
 npm run test:text              # 只测 JSON / 时间戳 / Base64 解码
+npm run test:pwa               # 只测离线能力（自己起服务器，测完关掉）
+npm run icons                  # 重新生成 PWA 图标
 ```
 
 测试会启动本机 Chrome 跑完整链路（真实生成图片 → 上传 → 压缩 → 校验输出尺寸；时间戳会跟 Node 算出的结果对账），截图输出到 `tests/.cache/`。
+
+`test:pwa` 有个特别的地方：它**不能**用 `page.setOfflineMode` 来模拟断网。那个开关只作用于页面 target，而 Service Worker 跑在独立的 worker target 里，照样能联网 —— 于是「离线测试」全是假阳性。所以它自己在随机端口起一个静态服务器，测到一半真的 `server.close()` 掉，再验证缓存是否生效。
 
 改完代码记得跑一遍，特别是 `common.js` 里的 ZIP 打包和格式检测 —— 这两块出问题不会报错，只会让下载的文件打不开。
 

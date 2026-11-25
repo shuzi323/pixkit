@@ -1,5 +1,16 @@
 # Cloudflare Pages 响应头配置
 # 文档：https://developers.cloudflare.com/pages/configuration/headers/
+#
+# 规则按从上到下匹配，更具体的要写在前面，否则会被通配规则吃掉。
+
+# Service Worker 绝对不能缓存。它自己就是"更新的入口"，
+# 一旦被缓存住，改了策略用户永远拿不到新版。
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# manifest 也走短缓存，改了图标和名字能及时生效
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600
 
 /*
   X-Content-Type-Options: nosniff

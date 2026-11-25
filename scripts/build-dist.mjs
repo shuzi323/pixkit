@@ -19,6 +19,8 @@ const INCLUDE = [
   'robots.txt',
   'sitemap.xml',
   '_headers',
+  'manifest.webmanifest',
+  'sw.js',
   'assets',
   'tools',
 ];

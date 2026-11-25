@@ -7,6 +7,7 @@ import {
   ZipWriter, decodeImage, makeCanvas, canvasToBlob, canEncode
 } from './common.js';
 import { t } from './i18n.js';
+import { openCompare, close as closeCompare } from './compare.js';
 
 /* ---------------- 元素 ---------------- */
 
@@ -328,9 +329,28 @@ function paintRow(item) {
       <div class="file-row__meta">${metaHtml}</div>
     </div>
     <div class="results__actions">
+      <button class="btn btn--ghost btn--sm" data-act="cmp" ${status !== 'done' ? 'disabled' : ''}>对比</button>
       <button class="btn btn--ghost btn--sm" data-act="dl" ${status !== 'done' ? 'disabled' : ''}>下载</button>
     </div>
   `;
+
+  row.querySelector('[data-act="cmp"]')?.addEventListener('click', () => {
+    if (!item.result || !item.url) return;
+
+    const r = item.result;
+    const pct = item.size > 0 ? Math.round(((item.size - r.blob.size) / item.size) * 100) : 0;
+    const meta = `${formatBytes(item.size)} → ${formatBytes(r.blob.size)}`
+      + (pct > 0 ? `　−${pct}%` : '');
+
+    // 原图的 blob URL 只有这次对比用，关掉面板就回收
+    const beforeUrl = URL.createObjectURL(item.file);
+    openCompare({
+      before: beforeUrl,
+      after: item.url,
+      meta,
+      onClose: () => URL.revokeObjectURL(beforeUrl),
+    });
+  });
 
   row.querySelector('[data-act="dl"]')?.addEventListener('click', () => {
     if (!item.result) return;
@@ -414,6 +434,7 @@ async function downloadAll() {
 /* ---------------- 清空 ---------------- */
 
 function clearAll() {
+  closeCompare();
   for (const i of state.items) {
     if (i.url) URL.revokeObjectURL(i.url);
     if (i.bitmap) i.bitmap.close?.();

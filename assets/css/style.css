@@ -1216,3 +1216,383 @@ select:focus, input[type="text"]:focus, input[type="number"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============================================================
+   首页工具栏：搜索 + 分类
+   ============================================================ */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.toolbar__search {
+  position: relative;
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.toolbar__search > svg {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+.toolbar__search input {
+  width: 100%;
+  height: 40px;
+  padding: 0 36px 0 37px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.toolbar__search input::placeholder { color: var(--ink-3); }
+
+.toolbar__search input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, .12);
+}
+
+/* 去掉 Safari/Chrome 自带的清除叉，用我们自己的（样式可控） */
+.toolbar__search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+.toolbar__clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--line);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.toolbar__clear:hover { background: var(--line-2); }
+
+.toolbar__tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+.toolbar__tabs button {
+  padding: 7px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+
+.toolbar__tabs button:hover { color: var(--ink); }
+.toolbar__tabs button.is-on { background: var(--brand); color: #fff; }
+
+.toolbar__empty {
+  padding: 44px 20px;
+  text-align: center;
+  color: var(--ink-2);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+
+.toolbar__empty a { color: var(--brand); }
+
+.toolbar__empty-sub {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .toolbar { gap: 10px; }
+  .toolbar__search { max-width: none; flex-basis: 100%; }
+  .toolbar__tabs { width: 100%; }
+  .toolbar__tabs button { flex: 1; padding: 8px 10px; }
+}
+
+/* ============================================================
+   PWA 安装引导
+   ============================================================ */
+
+/* 胶囊由一个容器 + 两个独立按钮组成 —— button 里不能嵌套 button */
+.install-wrap {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--brand);
+  box-shadow: 0 10px 24px -8px rgba(79, 70, 229, .55);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .install-wrap { bottom: calc(18px + env(safe-area-inset-bottom)); }
+}
+
+.install-wrap.is-in { opacity: 1; transform: none; }
+
+.install-wrap button {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.install-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 8px 11px 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.install-x {
+  padding: 11px 13px 11px 4px !important;
+  font-size: 17px;
+  opacity: .6;
+  transition: opacity .15s;
+}
+
+.install-x:hover { opacity: 1; }
+
+.install-wrap button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+  border-radius: 999px;
+}
+
+/* 对比面板是全屏遮罩，底下的浮动按钮会透出来 */
+body.is-locked .install-wrap,
+body.is-locked .install-tip { display: none; }
+
+.install-tip {
+  position: fixed;
+  right: 18px;
+  bottom: 70px;
+  z-index: 61;
+  max-width: 260px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.65;
+  box-shadow: var(--shadow-lg);
+  animation: tipIn .2s ease;
+}
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  .install-tip { bottom: calc(70px + env(safe-area-inset-bottom)); }
+}
+
+@keyframes tipIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (max-width: 640px) {
+  .install-wrap { right: 12px; }
+  .install-main { padding: 10px 8px 10px 14px; font-size: 13px; }
+  .install-x { padding: 10px 12px 10px 4px !important; }
+  .install-tip { right: 12px; left: 12px; max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-wrap { transition: none; }
+  .install-tip { animation: none; }
+}
+
+/* ============================================================
+   压缩前后对比（lightbox）
+   ============================================================ */
+
+body.is-locked { overflow: hidden; }
+
+.cmp {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: rgba(15, 23, 42, .97);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.cmp.is-open { opacity: 1; }
+
+.cmp__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  color: #fff;
+}
+
+.cmp__info {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cmp__title { font-size: 15px; font-weight: 600; }
+
+.cmp__meta {
+  font-size: 13px;
+  color: rgba(255, 255, 255, .62);
+  font-variant-numeric: tabular-nums;
+}
+
+.cmp__close {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.cmp__close:hover { background: rgba(255, 255, 255, .22); }
+.cmp__close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* 尺寸由流内的「压缩后」图撑开，原图那层绝对定位盖满，天然像素对齐 */
+.cmp__stage {
+  position: relative;
+  align-self: center;
+  justify-self: center;
+  max-width: 92vw;
+  max-height: 78vh;
+  overflow: hidden;
+  border-radius: 6px;
+  line-height: 0;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .65);
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cmp__img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 92vw;
+  max-height: 78vh;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.cmp__before {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 50% 0 0);
+}
+
+/* 两层必须完全重合，分辨率不同也按同一框缩放 */
+.cmp__before .cmp__img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+
+.cmp__handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-1px);
+  background: rgba(255, 255, 255, .92);
+  pointer-events: none;
+}
+
+.cmp__grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+}
+
+.cmp.is-dragging .cmp__grip { transform: translate(-50%, -50%) scale(.92); }
+
+.cmp__tag {
+  position: absolute;
+  top: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .62);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.7;
+  pointer-events: none;
+}
+
+.cmp__tag--l { left: 12px; }
+.cmp__tag--r { right: 12px; }
+
+@media (max-width: 640px) {
+  .cmp__bar { padding: 10px 14px; }
+  .cmp__title { font-size: 14px; }
+  .cmp__meta { font-size: 12px; }
+  .cmp__stage, .cmp__img { max-width: 96vw; max-height: 72vh; }
+  .cmp__tag { top: 8px; font-size: 10px; }
+  .cmp__tag--l { left: 8px; }
+  .cmp__tag--r { right: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmp { transition: none; }
+}

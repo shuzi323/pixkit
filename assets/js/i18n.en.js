@@ -23,6 +23,27 @@ const UI = {
   "常见问题": "FAQ",
   "回到首页": "Back to home",
   "更多工具": "More tools",
+
+  /* ---------- 首页工具栏（搜索 + 分类） ---------- */
+  "全部": "All",
+  "图片工具": "Image tools",
+  "开发者工具": "Dev tools",
+  "搜索工具，比如「压缩」「JSON」": "Search tools, e.g. \"compress\" or \"JSON\"",
+  "搜索工具": "Search tools",
+  "清空搜索": "Clear search",
+  "工具分类": "Tool categories",
+  "没有找到匹配的工具，换个关键词试试。": "No tool matched that. Try a different keyword.",
+  "直接开始压缩图片": "Start compressing images",
+
+  /* ---------- 通用组件（对比面板 / 安装引导） ---------- */
+  "压缩前后对比": "Before & after",
+  "原图": "Original",
+  "压缩后": "Compressed",
+  "对比": "Compare",
+  "关闭": "Close",
+  "安装到桌面": "Install app",
+  "点击 Safari 底部的「分享」按钮，然后选择「添加到主屏幕」。": "Tap Share at the bottom of Safari, then choose \"Add to Home Screen\".",
+  "装好之后断网也能继续用。": "Once installed, it keeps working with no connection.",
   "开发者": "Developer",
   "最常用": "Most used",
   "所有处理在你的浏览器本地完成。": "Everything runs locally in your browser.",
@@ -88,8 +109,8 @@ const UI = {
   "大部分免费工具限制单次 5 张、单张 5MB，超过就要付费。因为服务器成本压在它们身上。我们没有这个成本，所以也没有这个限制。":
     "Most free tools cap you at five files of 5MB because servers cost them money. We have no server cost, so we have no cap.",
   "真的完全不上传吗？怎么证明？": "Is it really never uploaded? How can I check?",
-  "你可以打开浏览器开发者工具（F12）的 Network 面板，然后拖一张图进来处理 —— 你会看到没有任何图片数据被发出。整个页面加载完之后，断网也能继续用。":
-    "Open DevTools (F12), go to the Network panel, then drop an image in. No image data is ever sent. Once the page has loaded, you can even go offline and keep working.",
+  "你可以打开浏览器开发者工具（F12）的 Network 面板，然后拖一张图进来处理 —— 你会看到没有任何图片数据被发出。整个页面加载完之后，断网也能继续用；装到桌面之后更是连网络都不需要。":
+    "Open DevTools (F12), go to the Network panel, then drop an image in. No image data is ever sent. Once the page has loaded you can even go offline and keep working — and once installed, it doesn't need a network at all.",
   "这是架构层面的保证，不是承诺：处理逻辑全部写在前端 JavaScript 里，服务器上根本没有接收图片的接口。":
     "This is structural, not a promise: all processing lives in front-end JavaScript, and the server has no endpoint that accepts images.",
   "压缩会损失画质吗？": "Does compression hurt quality?",
