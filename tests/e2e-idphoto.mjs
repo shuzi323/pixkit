@@ -1,20 +1,13 @@
 import puppeteer from 'puppeteer-core';
 import { writeFileSync, mkdirSync, readdirSync } from 'fs';
 import path from 'path';
+import { BASE, CACHE, LAUNCH, log } from './env.mjs';
 
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const BASE = 'http://localhost:8899';
-const OUT = 'E:/code/ai/forFun/tests/.cache';
-const DL = 'E:/code/ai/forFun/tests/.cache/dl';
+const OUT = CACHE;
+const DL = path.join(CACHE, 'dl');
 mkdirSync(DL, { recursive: true });
 
-const log = console.log;
-
-const browser = await puppeteer.launch({
-  executablePath: CHROME,
-  headless: 'new',
-  args: ['--disable-gpu', '--hide-scrollbars'],
-});
+const browser = await puppeteer.launch(LAUNCH);
 
 try {
   const page = await browser.newPage();

@@ -5,9 +5,12 @@
  */
 
 import { rmSync, mkdirSync, cpSync, readdirSync, statSync, existsSync } from 'fs';
-import { join, extname } from 'path';
+import { join, dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = 'E:/code/ai/forFun';
+// 用脚本自身位置推项目根目录，而不是写死绝对路径。
+// 否则云端构建机（Linux）上 E:/code/ai/forFun 根本不存在，构建必挂。
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
 
 const INCLUDE = [
@@ -54,5 +57,6 @@ console.log(`\n✓ dist 已生成`);
 console.log(`  文件数：${files}`);
 console.log(`  总体积：${(bytes / 1024).toFixed(0)} KB`);
 console.log(`\n下一步：`);
-console.log(`  拖拽上传 → 把 dist 文件夹拖到 Cloudflare Pages`);
+console.log(`  自动部署 → 推送到 GitHub，Cloudflare Pages 会按 build command 自动构建`);
+console.log(`  手动上传 → 把 dist 文件夹拖到 Cloudflare Pages`);
 console.log(`  命令行   → npx wrangler pages deploy dist --project-name=pixkit\n`);
